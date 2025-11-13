@@ -1,137 +1,133 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Schema validation dengan zod
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
-  const [errors, setErrors] = useState<{[key: string]: string}>({})
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {}
-    
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email'
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-    // Clear error for this field when user starts typing
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' })
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-
-    setIsLoading(true)
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
     try {
-      console.log('Login data:', formData)
+      console.log("Login data:", data);
       // TODO: Implement login API call
-      // await loginUser(formData)
+      // await loginUser(data)
+      // Handle successful login (redirect, show success message, etc.)
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error("Login failed:", error);
+      // Handle login error (show error message, etc.)
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen w-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
         <Card className="border-0 shadow-2xl rounded-2xl w-full mx-auto">
           <CardHeader className="space-y-1 text-center pb-8 pt-8">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Welcome Back
-            </CardTitle>
+            <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-base">
               Sign in to your account to continue
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-6 px-8">
-              <div className="space-y-3">
+          <CardContent className="px-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
                 </Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="Enter your email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`h-12 rounded-lg ${errors.email ? 'border-red-500 focus:ring-red-500' : 'focus:ring-indigo-500'}`}
+                  autoComplete="email"
+                  {...register("email")}
+                  className={`h-12 rounded-lg ${
+                    errors.email ? "border-red-500 focus:ring-red-500" : ""
+                  }`}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                  <p className="text-sm text-red-500 mt-1">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
-              <div className="space-y-3">
+
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password
                   </Label>
-                  <Link
-                    to="#"
-                    className="text-sm text-muted-foreground hover:text-indigo-600 transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
+                  <Link to="#">Forgot password?</Link>
                 </div>
                 <Input
                   id="password"
-                  name="password"
                   type="password"
                   placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`h-12 rounded-lg ${errors.password ? 'border-red-500 focus:ring-red-500' : 'focus:ring-indigo-500'}`}
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className={`h-12 rounded-lg ${
+                    errors.password ? "border-red-500 focus:ring-red-500" : ""
+                  }`}
                 />
                 {errors.password && (
-                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                  <p className="text-sm text-red-500 mt-1">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
+
               <div className="flex items-center space-x-2">
-                <input
+                <Checkbox
                   id="remember-me"
                   name="remember-me"
-                  type="checkbox"
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  className="w-4 h-4 rounded "
                 />
-                <Label htmlFor="remember-me" className="text-sm font-normal text-gray-700">
+                <Label
+                  htmlFor="remember-me"
+                  className="text-sm font-normal text-gray-700"
+                >
                   Remember me
                 </Label>
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-6 pb-8 px-8">
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+
+              <Button
+                type="submit"
+                className="w-full"
+                variant="default"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -140,22 +136,18 @@ export default function Login() {
                     <span>Signing in...</span>
                   </div>
                 ) : (
-                  'Sign In'
+                  "Sign In"
                 )}
               </Button>
+
               <p className="text-center text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <Link 
-                  to="/register" 
-                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
-                >
-                  Create one here
-                </Link>
+                Don't have an account?{" "}
+                <Link to="/register">Create one here</Link>
               </p>
-            </CardFooter>
-          </form>
+            </form>
+          </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
