@@ -12,7 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Schema validation dengan zod
@@ -25,12 +32,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -54,97 +58,111 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6">
       <div className="w-full max-w-md">
         <Card className="border-0 shadow-2xl rounded-2xl w-full mx-auto">
-          <CardHeader className="space-y-1 text-center pb-8 pt-8">
+          <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-base">
               Sign in to your account to continue
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email address"
-                  autoComplete="email"
-                  {...register("email")}
-                  className={`h-12 rounded-lg ${
-                    errors.email ? "border-red-500 focus:ring-red-500" : ""
-                  }`}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <Link to="#">Forgot password?</Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  {...register("password")}
-                  className={`h-12 rounded-lg ${
-                    errors.password ? "border-red-500 focus:ring-red-500" : ""
-                  }`}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember-me"
-                  name="remember-me"
-                  className="w-4 h-4 rounded "
-                />
-                <Label
-                  htmlFor="remember-me"
-                  className="text-sm font-normal text-gray-700"
-                >
-                  Remember me
-                </Label>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                variant="default"
-                disabled={isLoading}
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
               >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">
+                        Email Address
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Enter your email address"
+                          autoComplete="email"
+                          className="rounded-lg"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <p className="text-center text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/register">Create one here</Link>
-              </p>
-            </form>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="text-sm font-medium">
+                          Password
+                        </FormLabel>
+                        <Link to="#" className="text-sm">
+                          Forgot password?
+                        </Link>
+                      </div>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Enter your password"
+                          autoComplete="current-password"
+                          className="rounded-lg"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) =>
+                      setRememberMe(checked as boolean)
+                    }
+                    className="w-4 h-4 rounded"
+                  />
+                  <label
+                    htmlFor="remember-me"
+                    className="text-sm font-normal text-gray-700 cursor-pointer"
+                  >
+                    Remember me
+                  </label>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  variant="default"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Link to="/register" className="text-primary hover:underline">
+                    Create one here
+                  </Link>
+                </p>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>
