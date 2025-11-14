@@ -1,5 +1,12 @@
 import { AuthRepository, authRepository } from '../api/authApi';
-import type { LoginRequest, RegisterRequest, User, Tokens, AuthResponse, ErrorResponse } from '../types/interface';
+import type {
+  LoginRequest,
+  RegisterRequest,
+  User,
+  Tokens,
+  AuthResponse,
+} from "../types/interface";
+import type { ErrorResponse } from "@/shared/types/interface";
 import { AuthErrorCode } from '../types/enum';
 import api from '@/interceptors/axiosInterceptor';
 

@@ -23,15 +23,6 @@ export interface AuthResponse {
   };
 }
 
-export interface ErrorResponse {
-  success: boolean;
-  error: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
 export interface RegisterRequest {
   name: string;
   email: string;

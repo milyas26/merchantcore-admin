@@ -1,10 +1,10 @@
 import api from "@/interceptors/axiosInterceptor";
 import type {
   AuthResponse,
-  ErrorResponse,
   LoginRequest,
   RegisterRequest,
 } from "../types/interface";
+import type { ErrorResponse } from "@/shared/types/interface";
 
 export class AuthRepository {
   private static instance: AuthRepository;
