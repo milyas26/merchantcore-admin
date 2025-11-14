@@ -25,24 +25,36 @@ export function AppLayout({ children, breadcrumbs = [] }: AppLayoutProps) {
       <AppSidebar />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur transition-[width,height] ease-linear">
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center gap-2">
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                {breadcrumbs.map((breadcrumb, index) => (
-                  <React.Fragment key={breadcrumb.title}>
-                    <BreadcrumbItem>
-                      {breadcrumb.href ? (
-                        <BreadcrumbLink href={breadcrumb.href}>
-                          {breadcrumb.title}
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage>{breadcrumb.title}</BreadcrumbPage>
+                {breadcrumbs.map((breadcrumb, index) => {
+                  const isLast = index === breadcrumbs.length - 1;
+                  return (
+                    <React.Fragment key={breadcrumb.title}>
+                      <BreadcrumbItem>
+                        {breadcrumb.href ? (
+                          <BreadcrumbLink
+                            href={breadcrumb.href}
+                            className={isLast ? "font-semibold text-md" : ""}
+                          >
+                            {breadcrumb.title}
+                          </BreadcrumbLink>
+                        ) : (
+                          <BreadcrumbPage
+                            className={isLast ? "font-semibold text-md" : ""}
+                          >
+                            {breadcrumb.title}
+                          </BreadcrumbPage>
+                        )}
+                      </BreadcrumbItem>
+                      {index < breadcrumbs.length - 1 && (
+                        <BreadcrumbSeparator />
                       )}
-                    </BreadcrumbItem>
-                    {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
-                  </React.Fragment>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
