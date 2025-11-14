@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { useProductsQuery, ProductCard } from "@/features/catalog";
 import type { Product } from "@/features/catalog/api/productApi";
 
 export default function Catalog() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
@@ -29,13 +31,14 @@ export default function Catalog() {
   });
 
   const handleProductClick = (product: Product) => {
-    // TODO: Navigate to product detail or edit page
-    console.log("Product clicked:", product);
+    // Navigate to product edit page using slug with 5 random alphanumeric characters
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    navigate(`/catalog/${product.slug}-${randomSuffix}`);
   };
 
   const handleAddProduct = () => {
-    // TODO: Navigate to create product page
-    console.log("Add new product");
+    // Navigate to create product page
+    navigate("/catalog/new");
   };
 
   if (isLoading) {
@@ -48,7 +51,7 @@ export default function Catalog() {
             Tambah Produk
           </Button>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Search className="w-5 h-5 text-gray-400" />
           <Input
@@ -89,14 +92,15 @@ export default function Catalog() {
             Tambah Produk
           </Button>
         </div>
-        
+
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center space-x-2">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <h3 className="text-sm font-medium text-red-800">Error</h3>
           </div>
           <p className="mt-1 text-sm text-red-600">
-            {(error as any).error?.message || "Terjadi kesalahan saat memuat produk. Silakan coba lagi."}
+            {(error as any).error?.message ||
+              "Terjadi kesalahan saat memuat produk. Silakan coba lagi."}
           </p>
         </div>
       </div>
@@ -114,7 +118,7 @@ export default function Catalog() {
           Tambah Produk
         </Button>
       </div>
-      
+
       <div className="flex items-center space-x-2">
         <Search className="w-5 h-5 text-gray-400" />
         <Input
@@ -152,7 +156,7 @@ export default function Catalog() {
           ))}
         </div>
       )}
-      
+
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex items-center justify-center space-x-2 mt-8">
           <p className="text-sm text-gray-600">

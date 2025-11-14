@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
 import Catalog from "./pages/catalog/Catalog";
+import { CatalogEditor } from "./pages/catalog/CatalogEditor";
 import Inventory from "./pages/Inventory";
 import Promotions from "./pages/Promotions";
 import Reports from "./pages/Reports";
@@ -96,6 +97,38 @@ function App() {
                   ]}
                 >
                   <Catalog />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/catalog/new"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Catalog", href: "/catalog" },
+                    { title: "Tambah Produk" },
+                  ]}
+                >
+                  <CatalogEditor />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/catalog/:slug"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Catalog", href: "/catalog" },
+                    { title: "Edit Produk" },
+                  ]}
+                >
+                  <CatalogEditor />
                 </ProtectedLayout>
               </ProtectedRoute>
             }
