@@ -74,13 +74,10 @@ export class AuthRepository {
     }
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(): Promise<void> {
     try {
-      await api.post("/auth/logout", {
-        refresh_token: refreshToken,
-      });
+      await api.delete("/auth/logout");
     } catch (error: any) {
-      // Silently handle logout errors
       console.error("Logout error:", error);
     }
   }

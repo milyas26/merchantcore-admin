@@ -49,10 +49,8 @@ export default function Login() {
     try {
       const result = await login(data);
       if (result.success) {
-        toast.success("Login successful! Redirecting...");
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
+        toast.success("Login successful!...");
+        navigate("/");
       } else {
         toast.error(result.error || "Login failed");
       }
