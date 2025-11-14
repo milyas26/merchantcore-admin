@@ -13,7 +13,12 @@ export default defineConfig({
   },
   css: {
     postcss: {
-      plugins: [tailwindcss()]
-    }
-  }
+      plugins: [tailwindcss()],
+    },
+  },
+  server: {
+    hmr: {
+      overlay: false,
+    },
+  },
 });

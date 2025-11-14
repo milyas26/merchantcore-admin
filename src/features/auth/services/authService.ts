@@ -5,10 +5,17 @@ import type {
   User,
   Tokens,
   AuthResponse,
+  CurrentStore,
 } from "../types/interface";
 import type { ErrorResponse } from "@/shared/types/interface";
 import { AuthErrorCode } from "../types/enum";
 import api from "@/interceptors/axiosInterceptor";
+import {
+  setJsonCookie,
+  getJsonCookie,
+  removeCookie,
+  COOKIE_NAMES,
+} from "@/lib/utils";
 
 export class AuthService {
   private authRepository: AuthRepository;
@@ -43,9 +50,11 @@ export class AuthService {
     }
   }
 
-  async login(
-    credentials: LoginRequest
-  ): Promise<{ user: User; tokens: Tokens }> {
+  async login(credentials: LoginRequest): Promise<{
+    user: User;
+    tokens: Tokens;
+    currentStore?: CurrentStore | null;
+  }> {
     try {
       const response: AuthResponse = await this.authRepository.login(
         credentials
@@ -55,12 +64,19 @@ export class AuthService {
         throw new Error("Login failed: Invalid response format");
       }
 
-      const { user, tokens } = response.data;
+      const { user, tokens, currentStore } = response.data;
 
       // Store tokens in localStorage
       this.storeTokens(tokens);
 
-      return { user, tokens };
+      // Store current store in cookies
+      if (currentStore) {
+        setJsonCookie(COOKIE_NAMES.CURRENT_STORE, currentStore);
+      } else {
+        removeCookie(COOKIE_NAMES.CURRENT_STORE);
+      }
+
+      return { user, tokens, currentStore };
     } catch (error) {
       if (this.isErrorResponse(error)) {
         throw this.mapErrorResponse(error);
@@ -69,7 +85,11 @@ export class AuthService {
     }
   }
 
-  async refreshToken(): Promise<{ user: User; tokens: Tokens } | null> {
+  async refreshToken(): Promise<{
+    user: User;
+    tokens: Tokens;
+    currentStore?: CurrentStore | null;
+  } | null> {
     const refreshToken = this.getRefreshToken();
 
     if (!refreshToken) {
@@ -85,12 +105,19 @@ export class AuthService {
         throw new Error("Token refresh failed: Invalid response format");
       }
 
-      const { user, tokens } = response.data;
+      const { user, tokens, currentStore } = response.data;
 
       // Store new tokens in localStorage
       this.storeTokens(tokens);
 
-      return { user, tokens };
+      // Store current store in cookies
+      if (currentStore) {
+        setJsonCookie(COOKIE_NAMES.CURRENT_STORE, currentStore);
+      } else {
+        removeCookie(COOKIE_NAMES.CURRENT_STORE);
+      }
+
+      return { user, tokens, currentStore };
     } catch (error) {
       // If refresh fails, clear tokens and return null
       this.clearTokens();
@@ -107,6 +134,8 @@ export class AuthService {
     }
 
     this.clearTokens();
+    // Clear current store cookie
+    removeCookie(COOKIE_NAMES.CURRENT_STORE);
   }
 
   // Token management methods
@@ -145,6 +174,19 @@ export class AuthService {
   isAuthenticated(): boolean {
     const accessToken = this.getAccessToken();
     return !!accessToken;
+  }
+
+  // Current store management methods
+  getCurrentStore(): CurrentStore | null {
+    return getJsonCookie<CurrentStore>(COOKIE_NAMES.CURRENT_STORE);
+  }
+
+  setCurrentStore(store: CurrentStore | null): void {
+    if (store) {
+      setJsonCookie(COOKIE_NAMES.CURRENT_STORE, store);
+    } else {
+      removeCookie(COOKIE_NAMES.CURRENT_STORE);
+    }
   }
 
   // Helper methods

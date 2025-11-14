@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { useStoreStore } from "@/features/stores";
+import { getJsonCookie, COOKIE_NAMES } from "@/lib/utils";
+import type { CurrentStore } from "@/features/auth/types/interface";
 import type { CreateStoreRequest } from "@/features/stores";
 import { CreateStoreForm } from "./CreateStoreForm";
 import type { StoreOption } from "@/components/store-switcher";
@@ -35,38 +35,37 @@ interface StoreSwitcherWithFeatureProps {
 export function StoreSwitcherWithFeature({
   onStoreChange,
 }: StoreSwitcherWithFeatureProps) {
-  const { currentStore, setCurrentStore } = useStoreStore();
-  const { data: stores = [], isLoading, error } = useStores();
+  const [currentStore, setCurrentStore] = React.useState<CurrentStore | null>(
+    null
+  );
+  const { data: stores = [], isLoading } = useStores();
   const createStoreMutation = useCreateStore();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (error) {
-      toast.error(error.message || "Failed to load stores");
+    const storeFromCookie = getJsonCookie<CurrentStore>(
+      COOKIE_NAMES.CURRENT_STORE
+    );
+    if (storeFromCookie) {
+      setCurrentStore(storeFromCookie);
     }
-  }, [error]);
+  }, []);
 
-  // Convert Store to StoreOption format
   const storeOptions: StoreOption[] = stores.map((store: any) => ({
     id: store.id,
     name: store.name,
     description: store.description,
   }));
 
-  const selectedStore = currentStore
-    ? {
-        id: currentStore.id,
-        name: currentStore.name,
-        description: currentStore.description,
-      }
-    : storeOptions[0];
-
   const handleStoreChange = (storeOption: StoreOption) => {
-    const store = stores.find((s: any) => s.id === storeOption.id);
-    if (store) {
-      setCurrentStore(store);
-      onStoreChange?.(storeOption);
+    onStoreChange?.(storeOption);
+
+    const storeFromCookie = getJsonCookie<CurrentStore>(
+      COOKIE_NAMES.CURRENT_STORE
+    );
+    if (storeFromCookie) {
+      setCurrentStore(storeFromCookie);
     }
   };
 
@@ -119,11 +118,11 @@ export function StoreSwitcherWithFeature({
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">
-                    {selectedStore?.name || "Select Store"}
+                    {currentStore?.name || "Select Store"}
                   </span>
-                  {selectedStore?.description && (
+                  {currentStore?.description && (
                     <span className="text-xs text-muted-foreground line-clamp-1">
-                      {selectedStore.description}
+                      {currentStore.description}
                     </span>
                   )}
                 </div>
@@ -155,7 +154,7 @@ export function StoreSwitcherWithFeature({
                       )}
                     </div>
                   </div>
-                  {store.id === selectedStore?.id && (
+                  {store.id === currentStore?.id && (
                     <Check className="ml-auto h-4 w-4" />
                   )}
                 </DropdownMenuItem>

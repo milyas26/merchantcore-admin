@@ -15,11 +15,24 @@ export interface Tokens {
   refreshToken: string;
 }
 
+export interface CurrentStore {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  role: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  isActive?: boolean;
+}
+
 export interface AuthResponse {
   success: boolean;
   data: {
     user: User;
     tokens: Tokens;
+    currentStore?: CurrentStore | null;
   };
 }
 
