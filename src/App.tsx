@@ -3,7 +3,10 @@ import { Toaster } from "sonner";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import Orders from "./pages/Orders";
 import { useAuth } from "./features/auth/hooks/useAuth";
+import { ProtectedLayout } from "./components/protected-layout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -21,7 +24,39 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ProtectedLayout breadcrumbs={[{ title: "Dashboard" }]}>
+                  <Dashboard />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Products" },
+                  ]}
+                >
+                  <Products />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Orders" },
+                  ]}
+                >
+                  <Orders />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
