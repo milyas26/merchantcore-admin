@@ -11,12 +11,28 @@ import {
   Store,
   Settings,
   Megaphone,
+  LogOut,
+  FolderOpen,
 } from "lucide-react";
 
 import { StoreSwitcher } from "./store-switcher";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -71,6 +87,11 @@ const data = {
       title: "Catalog & Inventory",
       items: [
         {
+          title: "Category",
+          url: "/categories",
+          icon: FolderOpen,
+        },
+        {
           title: "Catalog",
           url: "/catalog",
           icon: Package,
@@ -122,10 +143,15 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const handleStoreChange = (store: any) => {
     console.log("Store changed to:", store);
     // TODO: Implement store switching logic
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -162,6 +188,52 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       <SidebarRail />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-3 px-2 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground">
+                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </div>
+              <div className="flex flex-1 flex-col">
+                <span className="text-sm font-medium">
+                  {user?.name || "User"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {user?.email || "user@example.com"}
+                </span>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    title="Logout"
+                    className="cursor-pointer"
+                  >
+                    <LogOut className="h-3 w-3" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to logout? You will need to login
+                      again to access the admin panel.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLogout}>
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
