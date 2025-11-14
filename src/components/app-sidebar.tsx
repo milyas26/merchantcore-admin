@@ -1,11 +1,14 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Home,
+  LayoutDashboard,
   Package,
+  Boxes,
   ShoppingCart,
   Users,
-  BarChart3,
+  Tag,
+  FileText,
+  Store,
   Settings,
 } from "lucide-react";
 
@@ -44,34 +47,69 @@ const data = {
   ],
   navMain: [
     {
-      title: "Dashboard",
-      url: "/",
-      icon: Home,
+      title: "Main Menu",
+      items: [
+        {
+          title: "Dashboard",
+          url: "/",
+          icon: LayoutDashboard,
+        },
+        {
+          title: "Orders",
+          url: "/orders",
+          icon: ShoppingCart,
+        },
+        {
+          title: "Customers",
+          url: "/customers",
+          icon: Users,
+        },
+      ],
     },
     {
-      title: "Products",
-      url: "/products",
-      icon: Package,
+      title: "Catalog & Inventory",
+      items: [
+        {
+          title: "Catalog",
+          url: "/catalog",
+          icon: Package,
+        },
+        {
+          title: "Inventory",
+          url: "/inventory",
+          icon: Boxes,
+        },
+      ],
     },
     {
-      title: "Orders",
-      url: "/orders",
-      icon: ShoppingCart,
+      title: "Marketing & Reports",
+      items: [
+        {
+          title: "Promotions",
+          url: "/promotions",
+          icon: Tag,
+        },
+        {
+          title: "Reports",
+          url: "/reports",
+          icon: FileText,
+        },
+      ],
     },
     {
-      title: "Customers",
-      url: "/customers",
-      icon: Users,
-    },
-    {
-      title: "Analytics",
-      url: "/analytics",
-      icon: BarChart3,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
+      title: "Configuration",
+      items: [
+        {
+          title: "Storefront",
+          url: "/storefront",
+          icon: Store,
+        },
+        {
+          title: "Settings",
+          url: "/settings",
+          icon: Settings,
+        },
+      ],
     },
   ],
 };
@@ -94,26 +132,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {data.navMain.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {data.navMain.map((section) => (
+          <SidebarGroup key={section.title}>
+            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

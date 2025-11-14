@@ -5,6 +5,11 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
+import Catalog from "./pages/Catalog";
+import Inventory from "./pages/Inventory";
+import Promotions from "./pages/Promotions";
+import Reports from "./pages/Reports";
+import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
 
@@ -56,6 +61,100 @@ function App() {
                   ]}
                 >
                   <Orders />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/catalog"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Catalog" },
+                  ]}
+                >
+                  <Catalog />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Inventory" },
+                  ]}
+                >
+                  <Inventory />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Promotions" },
+                  ]}
+                >
+                  <Promotions />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Reports" },
+                  ]}
+                >
+                  <Reports />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/storefront"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Storefront" },
+                  ]}
+                >
+                  <Storefront />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Customers" },
+                  ]}
+                >
+                  {/* Placeholder for Customers page */}
+                  <div className="space-y-4">
+                    <h1 className="text-3xl font-bold">Customers</h1>
+                    <p>Customer management page will be implemented here.</p>
+                  </div>
                 </ProtectedLayout>
               </ProtectedRoute>
             }
