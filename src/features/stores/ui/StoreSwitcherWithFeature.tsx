@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import * as React from "react"
-import { Check, ChevronsUpDown, Plus, Store } from "lucide-react"
+import * as React from "react";
+import { Check, ChevronsUpDown, Plus, Store } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -9,81 +8,82 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { useStoreStore } from "@/features/stores"
-import type { CreateStoreRequest } from "@/features/stores"
-import { CreateStoreForm } from "./CreateStoreForm"
-import type { StoreOption } from "@/components/store-switcher"
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { useStoreStore } from "@/features/stores";
+import type { CreateStoreRequest } from "@/features/stores";
+import { CreateStoreForm } from "./CreateStoreForm";
+import type { StoreOption } from "@/components/store-switcher";
+import { useStores, useCreateStore } from "../hooks/useStoresQuery";
 
 interface StoreSwitcherWithFeatureProps {
-  onStoreChange?: (store: StoreOption) => void
+  onStoreChange?: (store: StoreOption) => void;
 }
 
-export function StoreSwitcherWithFeature({ 
-  onStoreChange 
+export function StoreSwitcherWithFeature({
+  onStoreChange,
 }: StoreSwitcherWithFeatureProps) {
-  const { stores, currentStore, isLoading, fetchStores, createStore, setCurrentStore } = useStoreStore()
-  
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
+  const { currentStore, setCurrentStore } = useStoreStore();
+  const { data: stores = [], isLoading, error } = useStores();
+  const createStoreMutation = useCreateStore();
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    fetchStores()
-  }, [])
+    if (error) {
+      toast.error(error.message || "Failed to load stores");
+    }
+  }, [error]);
 
   // Convert Store to StoreOption format
-  const storeOptions: StoreOption[] = stores.map(store => ({
+  const storeOptions: StoreOption[] = stores.map((store: any) => ({
     id: store.id,
     name: store.name,
     description: store.description,
-  }))
+  }));
 
-  const selectedStore = currentStore ? {
-    id: currentStore.id,
-    name: currentStore.name,
-    description: currentStore.description,
-  } : storeOptions[0]
+  const selectedStore = currentStore
+    ? {
+        id: currentStore.id,
+        name: currentStore.name,
+        description: currentStore.description,
+      }
+    : storeOptions[0];
 
   const handleStoreChange = (storeOption: StoreOption) => {
-    const store = stores.find(s => s.id === storeOption.id)
+    const store = stores.find((s: any) => s.id === storeOption.id);
     if (store) {
-      setCurrentStore(store)
-      onStoreChange?.(storeOption)
+      setCurrentStore(store);
+      onStoreChange?.(storeOption);
     }
-  }
+  };
 
   const handleCreateStore = async (data: CreateStoreRequest) => {
     try {
-      const result = await createStore(data)
-      
-      if (result.success) {
-        toast.success("Store created successfully")
-        setIsCreateDialogOpen(false)
-      } else {
-        toast.error(result.error || "Failed to create store")
-      }
+      await createStoreMutation.mutateAsync(data);
+      setIsCreateDialogOpen(false);
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      console.error("Failed to create store:", error);
     }
-  }
+  };
 
   const handleCancel = () => {
-    setIsCreateDialogOpen(false)
-  }
+    setIsCreateDialogOpen(false);
+  };
 
-  if (isLoading && stores.length === 0) {
+  if (isLoading) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -101,7 +101,7 @@ export function StoreSwitcherWithFeature({
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   return (
@@ -184,6 +184,7 @@ export function StoreSwitcherWithFeature({
           <CreateStoreForm
             onSubmit={handleCreateStore}
             onCancel={handleCancel}
+            isSubmitting={createStoreMutation.isPending}
           />
         </DialogContent>
       </Dialog>

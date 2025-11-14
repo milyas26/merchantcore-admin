@@ -43,9 +43,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// Navigation data for e-commerce admin
 const data = {
-  // Removed hardcoded stores - now using StoreSwitcherWithFeature
   navMain: [
     {
       title: "Main Menu",
@@ -59,11 +57,6 @@ const data = {
           title: "Orders",
           url: "/orders",
           icon: ShoppingCart,
-        },
-        {
-          title: "Stores",
-          url: "/stores",
-          icon: Store,
         },
         {
           title: "Customers",

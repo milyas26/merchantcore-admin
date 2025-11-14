@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,16 +15,17 @@ import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
 import Category from "./pages/Category";
-import Stores from "./pages/Stores";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -176,25 +179,11 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/stores"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout
-                  breadcrumbs={[
-                    { title: "Dashboard", href: "/" },
-                    { title: "Stores" },
-                  ]}
-                >
-                  <Stores />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
-    </>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 
