@@ -10,6 +10,7 @@ import {
   FileText,
   Store,
   Settings,
+  Megaphone,
 } from "lucide-react";
 
 import { StoreSwitcher } from "./store-switcher";
@@ -84,6 +85,11 @@ const data = {
     {
       title: "Marketing & Reports",
       items: [
+        {
+          title: "Announcement",
+          url: "/announcement",
+          icon: Megaphone,
+        },
         {
           title: "Promotions",
           url: "/promotions",
