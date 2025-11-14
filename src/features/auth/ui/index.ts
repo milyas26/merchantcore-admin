@@ -1,1 +1,1 @@
-// import and export all Auth ui/components
+// Auth UI components exports

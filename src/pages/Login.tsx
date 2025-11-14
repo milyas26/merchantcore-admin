@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { toast } from "sonner";
 
 // Schema validation dengan zod
 const loginSchema = z.object({
@@ -31,8 +33,9 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
+  const { login, isLoading, error, clearError } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -42,18 +45,30 @@ export default function Login() {
     },
   });
 
+  // Clear error when form values change
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.getValues("email"), form.getValues("password"), error, clearError]);
+
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
-      console.log("Login data:", data);
-      // TODO: Implement login API call
-      // await loginUser(data)
-      // Handle successful login (redirect, show success message, etc.)
+      const result = await login(data);
+
+      if (result.success) {
+        toast.success("Login successful! Redirecting...");
+        // Redirect to dashboard or home page after successful login
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        toast.error(result.error || "Login failed");
+      }
     } catch (error) {
       console.error("Login failed:", error);
-      // Handle login error (show error message, etc.)
-    } finally {
-      setIsLoading(false);
+      toast.error("An unexpected error occurred during login");
     }
   };
 
@@ -68,6 +83,11 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8">
+            {error && (
+              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                {error}
+              </div>
+            )}
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}

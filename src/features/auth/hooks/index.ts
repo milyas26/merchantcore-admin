@@ -1,1 +1,2 @@
-// import and export all Auth hooks
+export { useAuth } from "./useAuth";
+export { default } from "./useAuth";

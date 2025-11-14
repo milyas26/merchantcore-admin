@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { toast } from "sonner";
 
 // Schema validation dengan zod
 const registerSchema = z
@@ -49,7 +51,8 @@ const registerSchema = z
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Register() {
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { register, isLoading, error, clearError } = useAuth();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -57,21 +60,45 @@ export default function Register() {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
+  // Clear error when form values change
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    form.getValues("name"),
+    form.getValues("email"),
+    form.getValues("password"),
+    form.getValues("confirmPassword"),
+    error,
+    clearError,
+  ]);
+
   const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
     try {
-      console.log("Register data:", data);
-      // TODO: Implement registration API call
-      // await registerUser(data)
-      // Handle successful registration (redirect, show success message, etc.)
+      const result = await register({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+
+      if (result.success) {
+        toast.success("Registration successful! Redirecting to login...");
+        // Redirect to login page after successful registration
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      } else {
+        toast.error(result.error || "Registration failed");
+      }
     } catch (error) {
       console.error("Registration failed:", error);
-      // Handle registration error (show error message, etc.)
-    } finally {
-      setIsLoading(false);
+      toast.error("An unexpected error occurred during registration");
     }
   };
 
@@ -88,6 +115,11 @@ export default function Register() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8">
+            {error && (
+              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                {error}
+              </div>
+            )}
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
