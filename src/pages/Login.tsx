@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +35,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,23 +45,13 @@ export default function Login() {
     },
   });
 
-  // Clear error when form values change
-  useEffect(() => {
-    if (error) {
-      clearError();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.getValues("email"), form.getValues("password"), error, clearError]);
-
   const onSubmit = async (data: LoginFormData) => {
     try {
       const result = await login(data);
-
       if (result.success) {
         toast.success("Login successful! Redirecting...");
-        // Redirect to dashboard or home page after successful login
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate("/");
         }, 1500);
       } else {
         toast.error(result.error || "Login failed");
@@ -83,11 +73,6 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8">
-            {error && (
-              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-                {error}
-              </div>
-            )}
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}

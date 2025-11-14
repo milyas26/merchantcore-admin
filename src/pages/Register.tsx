@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +51,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, isLoading } = useAuth();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -63,21 +62,6 @@ export default function Register() {
       confirmPassword: "",
     },
   });
-
-  // Clear error when form values change
-  useEffect(() => {
-    if (error) {
-      clearError();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    form.getValues("name"),
-    form.getValues("email"),
-    form.getValues("password"),
-    form.getValues("confirmPassword"),
-    error,
-    clearError,
-  ]);
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -115,11 +99,6 @@ export default function Register() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8">
-            {error && (
-              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-                {error}
-              </div>
-            )}
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
