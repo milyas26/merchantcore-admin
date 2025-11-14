@@ -1,0 +1,1 @@
+// CategoryEditor.tsx
