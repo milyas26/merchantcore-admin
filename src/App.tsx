@@ -13,6 +13,7 @@ import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
 import Category from "./pages/Category";
+import Stores from "./pages/Stores";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -171,6 +172,21 @@ function App() {
                     <h1 className="text-3xl font-bold">Customers</h1>
                     <p>Customer management page will be implemented here.</p>
                   </div>
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stores"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Stores" },
+                  ]}
+                >
+                  <Stores />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

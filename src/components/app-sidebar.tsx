@@ -15,7 +15,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 
-import { StoreSwitcher } from "./store-switcher";
+import { StoreSwitcherWithFeature } from "@/features/stores";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,23 +45,7 @@ import {
 
 // Navigation data for e-commerce admin
 const data = {
-  stores: [
-    {
-      id: "1",
-      name: "Main Store",
-      description: "Jakarta Utara",
-    },
-    {
-      id: "2",
-      name: "Branch Store",
-      description: "Jakarta Selatan",
-    },
-    {
-      id: "3",
-      name: "Online Store",
-      description: "E-commerce",
-    },
-  ],
+  // Removed hardcoded stores - now using StoreSwitcherWithFeature
   navMain: [
     {
       title: "Main Menu",
@@ -75,6 +59,11 @@ const data = {
           title: "Orders",
           url: "/orders",
           icon: ShoppingCart,
+        },
+        {
+          title: "Stores",
+          url: "/stores",
+          icon: Store,
         },
         {
           title: "Customers",
@@ -147,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const handleStoreChange = (store: any) => {
     console.log("Store changed to:", store);
-    // TODO: Implement store switching logic
+    // Store switching logic is handled inside StoreSwitcherWithFeature
   };
 
   const handleLogout = async () => {
@@ -157,9 +146,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <StoreSwitcher
-          stores={data.stores}
-          defaultStore={data.stores[0]}
+        <StoreSwitcherWithFeature
           onStoreChange={handleStoreChange}
         />
       </SidebarHeader>
