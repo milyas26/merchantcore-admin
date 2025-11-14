@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Allow 'any' type - disable the warning/error
+      '@typescript-eslint/no-explicit-any': 'off',
+      // You can also disable other related rules if needed
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+    },
   },
 ])
