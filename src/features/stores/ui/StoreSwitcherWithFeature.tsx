@@ -118,9 +118,11 @@ export function StoreSwitcherWithFeature({
                   <Store className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">{selectedStore?.name || "Select Store"}</span>
+                  <span className="font-semibold">
+                    {selectedStore?.name || "Select Store"}
+                  </span>
                   {selectedStore?.description && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground line-clamp-1">
                       {selectedStore.description}
                     </span>
                   )}
@@ -129,7 +131,7 @@ export function StoreSwitcherWithFeature({
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-[--radix-dropdown-menu-trigger-width] min-w-[250px]"
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-[250px] max-w-[250px]"
               align="start"
             >
               <DropdownMenuLabel>My Stores</DropdownMenuLabel>
@@ -147,17 +149,22 @@ export function StoreSwitcherWithFeature({
                     <div className="flex flex-col">
                       <span className="font-medium">{store.name}</span>
                       {store.description && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground line-clamp-1">
                           {store.description}
                         </span>
                       )}
                     </div>
                   </div>
-                  {store.id === selectedStore?.id && <Check className="ml-auto h-4 w-4" />}
+                  {store.id === selectedStore?.id && (
+                    <Check className="ml-auto h-4 w-4" />
+                  )}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setIsCreateDialogOpen(true)} className="gap-2">
+              <DropdownMenuItem
+                onSelect={() => setIsCreateDialogOpen(true)}
+                className="gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 Create New Store
               </DropdownMenuItem>
@@ -181,5 +188,5 @@ export function StoreSwitcherWithFeature({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
