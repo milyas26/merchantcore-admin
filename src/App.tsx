@@ -7,7 +7,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
-import Catalog from "./pages/Catalog";
+import Catalog from "./pages/catalog/Catalog";
 import Inventory from "./pages/Inventory";
 import Promotions from "./pages/Promotions";
 import Reports from "./pages/Reports";
