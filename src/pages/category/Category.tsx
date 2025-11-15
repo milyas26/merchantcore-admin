@@ -1,40 +1,72 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useCategoriesQuery } from "@/features/category/hooks/useCategoriesQuery"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Plus, Search } from "lucide-react"
-import { useState } from "react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useCategoriesQuery } from "@/features/category/hooks/useCategoriesQuery";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Plus, Search } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { categoryService } from "@/features/category/services/categoryService";
+import { toast } from "sonner";
+import { CategoryTreeView } from "@/features/category/components/CategoryTreeView";
 
 export default function Category() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const { data, isLoading, error } = useCategoriesQuery({
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const { data, isLoading, error, refetch } = useCategoriesQuery({
     search: searchTerm || undefined,
     limit: 50,
-    sortBy: 'name',
-    sortOrder: 'asc'
-  })
+    sortBy: "name",
+    sortOrder: "asc",
+  });
 
-  const categories = data?.data || []
+  const categories = data?.data || [];
+
+  const handleCreateCategory = () => {
+    navigate("/categories/new");
+  };
+
+  const handleEditCategory = (id: string) => {
+    navigate(`/categories/${id}`);
+  };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+      try {
+        await categoryService.deleteCategory(id);
+        toast.success(`Category "${name}" deleted successfully`);
+        refetch();
+      } catch (error) {
+        toast.error("Failed to delete category");
+        console.error("Delete error:", error);
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Categories</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Category
-        </Button>
-      </div>
-      
       <Card>
         <CardHeader>
-          <CardTitle>Category Catalog</CardTitle>
-          <CardDescription>
-            Manage your category catalog, categories, and category information.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <CardTitle>Category Catalog</CardTitle>
+              <CardDescription>
+                Manage your category catalog, categories, and category
+                information.
+              </CardDescription>
+            </div>
+            <Button onClick={handleCreateCategory}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Category
+            </Button>
+          </div>
           <div className="flex items-center space-x-2 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -66,43 +98,18 @@ export default function Category() {
             </div>
           ) : categories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No categories found. {searchTerm && `Try adjusting your search for "${searchTerm}".`}
+              No categories found.{" "}
+              {searchTerm && `Try adjusting your search for "${searchTerm}".`}
             </div>
           ) : (
-            <div className="space-y-2">
-              {categories.map((category: any) => (
-                <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <h3 className="font-medium">{category.name}</h3>
-                      <p className="text-sm text-muted-foreground">{category.slug}</p>
-                    </div>
-                    {category.description && (
-                      <p className="text-sm text-muted-foreground max-w-md truncate">
-                        {category.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Badge variant={category.isActive ? "default" : "secondary"}>
-                      {category.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">Pos: {category.position}</span>
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm">
-                        Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CategoryTreeView
+              categories={categories}
+              onEdit={handleEditCategory}
+              onDelete={handleDeleteCategory}
+            />
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

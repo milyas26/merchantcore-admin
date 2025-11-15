@@ -43,6 +43,23 @@ export interface GetCategoriesQuery {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface CategoryResponse {
+  success: boolean;
+  data: Category;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  parentId?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateCategoryRequest extends CreateCategoryRequest {}
+
 export class CategoryApi {
   private static instance: CategoryApi;
 
@@ -78,6 +95,77 @@ export class CategoryApi {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred while fetching categories",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async getCategoryById(id: string): Promise<CategoryResponse> {
+    try {
+      const response = await api.get<CategoryResponse>(`/categories/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while fetching category",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async createCategory(data: CreateCategoryRequest): Promise<CategoryResponse> {
+    try {
+      const response = await api.post<CategoryResponse>(`/categories`, data);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while creating category",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async updateCategory(id: string, data: UpdateCategoryRequest): Promise<CategoryResponse> {
+    try {
+      const response = await api.put<CategoryResponse>(`/categories/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while updating category",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    try {
+      await api.delete(`/categories/${id}`);
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while deleting category",
         },
       } as ErrorResponse;
     }

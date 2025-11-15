@@ -29,7 +29,6 @@ export const useAuthStore = create<AuthStore>()(
 
       clearError: () => set({ error: null }),
 
-      // Auth actions
       login: async (credentials: LoginRequest) => {
         set({ isLoading: true, error: null });
 
