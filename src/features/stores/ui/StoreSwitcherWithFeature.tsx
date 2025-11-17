@@ -26,20 +26,20 @@ import type { CurrentStore } from "@/features/auth/types/interface";
 import type { CreateStoreRequest } from "@/features/stores";
 import { CreateStoreForm } from "./CreateStoreForm";
 import type { StoreOption } from "@/components/store-switcher";
-import { useStores, useCreateStore } from "../hooks/useStoresQuery";
+import {
+  useStores,
+  useCreateStore,
+  useSwitchStore,
+} from "../hooks/useStoresQuery";
+import { authService } from "@/features/auth/services/authService";
 
-interface StoreSwitcherWithFeatureProps {
-  onStoreChange?: (store: StoreOption) => void;
-}
-
-export function StoreSwitcherWithFeature({
-  onStoreChange,
-}: StoreSwitcherWithFeatureProps) {
+export function StoreSwitcherWithFeature() {
   const [currentStore, setCurrentStore] = React.useState<CurrentStore | null>(
     null
   );
   const { data: stores = [], isLoading } = useStores();
   const createStoreMutation = useCreateStore();
+  const switchStoreMutation = useSwitchStore();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
@@ -58,14 +58,28 @@ export function StoreSwitcherWithFeature({
     description: store.description,
   }));
 
-  const handleStoreChange = (storeOption: StoreOption) => {
-    onStoreChange?.(storeOption);
+  const handleStoreChange = async (storeOption: StoreOption) => {
+    try {
+      const result = await switchStoreMutation.mutateAsync(storeOption.id);
 
-    const storeFromCookie = getJsonCookie<CurrentStore>(
-      COOKIE_NAMES.CURRENT_STORE
-    );
-    if (storeFromCookie) {
-      setCurrentStore(storeFromCookie);
+      authService.storeTokens({
+        accessToken: result.accessToken,
+        refreshToken: authService.getRefreshToken() || "",
+      });
+
+      const currentStoreData = {
+        id: result.currentStore.id,
+        name: result.currentStore.name,
+        description: result.currentStore.description || "",
+        role: "OWNER", // Default role, bisa disesuaikan dengan data dari API
+      };
+      authService.setCurrentStore(currentStoreData);
+
+      setCurrentStore(currentStoreData);
+
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to switch store:", error);
     }
   };
 

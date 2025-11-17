@@ -127,11 +127,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const handleStoreChange = (store: any) => {
-    console.log("Store changed to:", store);
-    // Store switching logic is handled inside StoreSwitcherWithFeature
-  };
-
   const handleLogout = async () => {
     await logout();
   };
@@ -139,9 +134,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <StoreSwitcherWithFeature
-          onStoreChange={handleStoreChange}
-        />
+        <StoreSwitcherWithFeature />
       </SidebarHeader>
       <SidebarContent>
         {data.navMain.map((section) => (

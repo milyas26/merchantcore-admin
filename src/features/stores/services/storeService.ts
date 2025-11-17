@@ -5,6 +5,7 @@ import type {
   UpdateStoreRequest,
   StoreResponse,
   StoresResponse,
+  SwitchStoreResponse,
 } from "../types/interface";
 import type { ErrorResponse } from "@/shared/types/interface";
 
@@ -91,6 +92,26 @@ export class StoreService {
         throw this.mapErrorResponse(error);
       }
       throw new Error("Failed to delete store: An unexpected error occurred");
+    }
+  }
+
+  async switchStore(storeId: string): Promise<{ currentStore: Store; accessToken: string }> {
+    try {
+      const response: SwitchStoreResponse = await this.storeRepository.switchStore(storeId);
+
+      if (!response.success || !response.data) {
+        throw new Error("Failed to switch store: Invalid response format");
+      }
+
+      return {
+        currentStore: response.data.currentStore,
+        accessToken: response.data.accessToken,
+      };
+    } catch (error) {
+      if (this.isErrorResponse(error)) {
+        throw this.mapErrorResponse(error);
+      }
+      throw new Error("Failed to switch store: An unexpected error occurred");
     }
   }
 

@@ -18,7 +18,7 @@ export interface Tokens {
 export interface CurrentStore {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   description: string | null;
   role: string;
   address?: string;

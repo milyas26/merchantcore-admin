@@ -43,6 +43,14 @@ export interface StoresResponse {
   }
 }
 
+export interface SwitchStoreResponse {
+  success: boolean
+  data: {
+    currentStore: Store
+    accessToken: string
+  }
+}
+
 export interface StoreState {
   stores: Store[]
   currentStore: Store | null

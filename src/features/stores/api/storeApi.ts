@@ -4,6 +4,7 @@ import type {
   StoresResponse,
   CreateStoreRequest,
   UpdateStoreRequest,
+  SwitchStoreResponse,
 } from "../types/interface";
 import type { ErrorResponse } from "@/shared/types/interface";
 
@@ -109,6 +110,26 @@ export class StoreRepository {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred while deleting store",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async switchStore(storeId: string): Promise<SwitchStoreResponse> {
+    try {
+      const response = await api.post<SwitchStoreResponse>("/stores/switch", {
+        storeId,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while switching store",
         },
       } as ErrorResponse;
     }

@@ -70,3 +70,23 @@ export function useStore(id: string) {
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
+
+// Switch store hook
+export function useSwitchStore() {
+  return useMutation({
+    mutationFn: async (storeId: string) => {
+      try {
+        const result = await storeService.switchStore(storeId)
+        return result
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Failed to switch store")
+      }
+    },
+    onSuccess: () => {
+      toast.success("Store switched successfully")
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to switch store")
+    },
+  })
+}
