@@ -8,9 +8,9 @@ export const categoryFormSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   description: z.string().optional(),
   image: z.string().optional(),
-  parentId: z.string().optional(),
-  isActive: z.boolean().optional().default(true),
-  sortOrder: z.number().int().min(0, "Sort order must be positive").optional().default(0),
+  parentId: z.string().nullable().optional(),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().min(0, "Sort order must be positive").default(0),
 });
 
 export type CategoryFormData = z.infer<typeof categoryFormSchema>;

@@ -12,14 +12,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Search } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { categoryService } from "@/features/category/services/categoryService";
 import { toast } from "sonner";
 import { CategoryTreeView } from "@/features/category/components/CategoryTreeView";
+import { CategoryEditorModal } from "@/features/category/components/CategoryEditorModal";
 
 export default function Category() {
   const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editCategoryId, setEditCategoryId] = useState<string | undefined>(
+    undefined
+  );
+  const [defaultParentId, setDefaultParentId] = useState<string | undefined>(
+    undefined
+  );
   const { data, isLoading, error, refetch } = useCategoriesQuery({
     search: searchTerm || undefined,
     limit: 50,
@@ -30,11 +36,21 @@ export default function Category() {
   const categories = data?.data || [];
 
   const handleCreateCategory = () => {
-    navigate("/categories/new");
+    setEditCategoryId(undefined);
+    setDefaultParentId(undefined);
+    setIsEditorOpen(true);
   };
 
   const handleEditCategory = (id: string) => {
-    navigate(`/categories/${id}`);
+    setEditCategoryId(id);
+    setDefaultParentId(undefined);
+    setIsEditorOpen(true);
+  };
+
+  const handleAddChild = (parentId: string) => {
+    setEditCategoryId(undefined);
+    setDefaultParentId(parentId);
+    setIsEditorOpen(true);
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
@@ -42,11 +58,28 @@ export default function Category() {
       try {
         await categoryService.deleteCategory(id);
         toast.success(`Category "${name}" deleted successfully`);
-        refetch();
       } catch (error) {
         toast.error("Failed to delete category");
         console.error("Delete error:", error);
       }
+    }
+  };
+
+  const handleMoveCategory = async ({
+    id,
+    newParentId,
+  }: {
+    id: string;
+    newParentId: string | null;
+  }) => {
+    try {
+      await categoryService.moveCategory(id, {
+        parentId: newParentId ?? undefined,
+      });
+      toast.success("Kategori dipindahkan");
+    } catch (error) {
+      toast.error("Gagal memindahkan kategori");
+      console.error("Move error:", error);
     }
   };
 
@@ -106,10 +139,24 @@ export default function Category() {
               categories={categories}
               onEdit={handleEditCategory}
               onDelete={handleDeleteCategory}
+              onAddChild={handleAddChild}
+              onMoveCategory={handleMoveCategory}
             />
           )}
         </CardContent>
       </Card>
+      <CategoryEditorModal
+        open={isEditorOpen}
+        onOpenChange={(open) => setIsEditorOpen(open)}
+        categoryId={editCategoryId}
+        defaultParentId={defaultParentId}
+        onSuccess={() => {
+          setIsEditorOpen(false);
+          setEditCategoryId(undefined);
+          setDefaultParentId(undefined);
+          refetch();
+        }}
+      />
     </div>
   );
 }

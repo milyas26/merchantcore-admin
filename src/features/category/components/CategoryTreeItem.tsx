@@ -1,6 +1,15 @@
+import { forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  GripVertical,
+} from "lucide-react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { CategoryTreeNode } from "../utils/buildCategoryTree";
 
 interface CategoryTreeItemProps {
@@ -8,16 +17,25 @@ interface CategoryTreeItemProps {
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   onToggleExpand: (id: string) => void;
+  onAddChild: (id: string) => void;
 }
 
-export function CategoryTreeItem({
-  category,
-  onEdit,
-  onDelete,
-  onToggleExpand
-}: CategoryTreeItemProps) {
+export const CategoryTreeItem = forwardRef<
+  HTMLDivElement,
+  CategoryTreeItemProps
+>(({ category, onEdit, onDelete, onToggleExpand, onAddChild }, ref) => {
   const hasChildren = category.children.length > 0;
   const isExpanded = category.isExpanded ?? true;
+
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: category.id,
+  });
+  const {
+    setNodeRef: setDragRef,
+    listeners,
+    attributes,
+    transform,
+  } = useDraggable({ id: category.id });
 
   const handleToggle = () => {
     if (hasChildren) {
@@ -26,10 +44,17 @@ export function CategoryTreeItem({
   };
 
   return (
-    <div className="group">
+    <div className="group" ref={setDropRef}>
       <div
+        ref={ref}
         className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-        style={{ marginLeft: `${category.level * 24}px` }}
+        style={{
+          marginLeft: `${category.level * 24}px`,
+          backgroundColor: isOver ? "rgba(0,0,0,0.04)" : undefined,
+          transform: transform
+            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+            : undefined,
+        }}
       >
         <div className="flex items-center space-x-3 flex-1">
           {hasChildren && (
@@ -47,7 +72,7 @@ export function CategoryTreeItem({
             </Button>
           )}
           {!hasChildren && <div className="w-6" />}
-          
+
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <h3 className="font-medium">{category.name}</h3>
@@ -58,9 +83,7 @@ export function CategoryTreeItem({
                 {category.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {category.slug}
-            </p>
+            <p className="text-sm text-muted-foreground">{category.slug}</p>
             {category.description && (
               <p className="text-sm text-muted-foreground max-w-md truncate">
                 {category.description}
@@ -68,17 +91,28 @@ export function CategoryTreeItem({
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div
+            ref={setDragRef}
+            {...listeners}
+            {...attributes}
+            className="cursor-grab touch-none"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <span className="text-sm text-muted-foreground">
             Pos: {category.position}
           </span>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(category.id)}>
+            <Edit className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onEdit(category.id)}
+            onClick={() => onAddChild(category.id)}
           >
-            <Edit className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -90,20 +124,21 @@ export function CategoryTreeItem({
           </Button>
         </div>
       </div>
-      
+
       {hasChildren && isExpanded && (
         <div className="mt-1 space-y-1">
-          {category.children.map(child => (
+          {category.children.map((child) => (
             <CategoryTreeItem
               key={child.id}
               category={child}
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleExpand={onToggleExpand}
+              onAddChild={onAddChild}
             />
           ))}
         </div>
       )}
     </div>
   );
-}
+});

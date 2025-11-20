@@ -16,7 +16,6 @@ import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
 import Category from "./pages/category/Category";
-import { CategoryEditor } from "./pages/category/CategoryEditor";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -83,38 +82,6 @@ function App() {
                   ]}
                 >
                   <Category />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/categories/new"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout
-                  breadcrumbs={[
-                    { title: "Dashboard", href: "/" },
-                    { title: "Categories", href: "/categories" },
-                    { title: "Create Category" },
-                  ]}
-                >
-                  <CategoryEditor />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/categories/:id"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout
-                  breadcrumbs={[
-                    { title: "Dashboard", href: "/" },
-                    { title: "Categories", href: "/categories" },
-                    { title: "Edit Category" },
-                  ]}
-                >
-                  <CategoryEditor />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

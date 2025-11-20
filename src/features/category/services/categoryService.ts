@@ -3,6 +3,7 @@ import type {
   GetCategoriesQuery,
   CreateCategoryRequest,
   UpdateCategoryRequest,
+  MoveCategoryRequest,
 } from "../api/categoryApi";
 
 export class CategoryService {
@@ -35,6 +36,10 @@ export class CategoryService {
 
   async deleteCategory(id: string) {
     return categoryApi.deleteCategory(id);
+  }
+
+  async moveCategory(id: string, data: MoveCategoryRequest) {
+    return categoryApi.moveCategory(id, data);
   }
 }
 

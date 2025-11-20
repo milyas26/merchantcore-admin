@@ -51,14 +51,27 @@ export interface CategoryResponse {
 export interface CreateCategoryRequest {
   name: string;
   slug: string;
-  description?: string;
-  image?: string;
-  parentId?: string;
+  description?: string | null;
+  image?: string | null;
+  parentId?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 }
 
-export interface UpdateCategoryRequest extends CreateCategoryRequest {}
+export interface UpdateCategoryRequest {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  image?: string | null;
+  parentId?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface MoveCategoryRequest {
+  parentId?: string;
+  sortOrder?: number;
+}
 
 export class CategoryApi {
   private static instance: CategoryApi;
@@ -72,10 +85,12 @@ export class CategoryApi {
     return CategoryApi.instance;
   }
 
-  async getCategories(query?: GetCategoriesQuery): Promise<GetCategoriesResponse> {
+  async getCategories(
+    query?: GetCategoriesQuery
+  ): Promise<GetCategoriesResponse> {
     try {
       const params = new URLSearchParams();
-      
+
       if (query) {
         Object.entries(query).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -84,7 +99,9 @@ export class CategoryApi {
         });
       }
 
-      const response = await api.get<GetCategoriesResponse>(`/categories?${params.toString()}`);
+      const response = await api.get<GetCategoriesResponse>(
+        `/categories?${params.toString()}`
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.data) {
@@ -136,9 +153,15 @@ export class CategoryApi {
     }
   }
 
-  async updateCategory(id: string, data: UpdateCategoryRequest): Promise<CategoryResponse> {
+  async updateCategory(
+    id: string,
+    data: UpdateCategoryRequest
+  ): Promise<CategoryResponse> {
     try {
-      const response = await api.put<CategoryResponse>(`/categories/${id}`, data);
+      const response = await api.put<CategoryResponse>(
+        `/categories/${id}`,
+        data
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.data) {
@@ -149,6 +172,30 @@ export class CategoryApi {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred while updating category",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async moveCategory(
+    id: string,
+    data: MoveCategoryRequest
+  ): Promise<CategoryResponse> {
+    try {
+      const response = await api.put<CategoryResponse>(
+        `/categories/${id}/move`,
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while moving category",
         },
       } as ErrorResponse;
     }
