@@ -9,34 +9,35 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
-  const mainImage = product.media?.[0];
+  const mainImage = product.images?.[0];
   const hasVariants = product.variants && product.variants.length > 0;
-  const inStock = hasVariants 
-    ? product.variants!.some(variant => 
-        !product.trackInventory || 
-        (variant.inventory && variant.inventory.quantity > variant.inventory.reserved)
-      )
-    : true;
+  // const inStock = hasVariants
+  //   ? product.variants!.some(variant =>
+  //       !product.trackInventory ||
+  //       (variant.inventory && variant.inventory.quantity > variant.inventory.reserved)
+  //     )
+  //   : true;
+  const inStock = true;
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
   };
 
   const getLowestVariantPrice = () => {
     if (!hasVariants) return product.basePrice;
-    
-    const variantPrices = product.variants!.map(v => v.price);
+
+    const variantPrices = product.variants!.map((v) => v.price);
     return Math.min(...variantPrices);
   };
 
   const displayPrice = getLowestVariantPrice();
 
   return (
-    <Card 
+    <Card
       className={cn(
         "overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer",
         !product.isActive && "opacity-60"
@@ -55,7 +56,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             <Package className="w-16 h-16 text-gray-400" />
           </div>
         )}
-        
+
         {!inStock && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <span className="text-white font-semibold text-sm bg-black px-2 py-1 rounded">
@@ -63,7 +64,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             </span>
           </div>
         )}
-        
+
         {product.isFeatured && (
           <div className="absolute top-2 left-2">
             <span className="bg-yellow-400 text-yellow-900 text-xs font-semibold px-2 py-1 rounded-full">
@@ -71,7 +72,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             </span>
           </div>
         )}
-        
+
         {!product.isActive && (
           <div className="absolute top-2 right-2">
             <span className="bg-gray-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
@@ -80,7 +81,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
         )}
       </div>
-      
+
       <CardHeader className="p-4 pb-2">
         <div className="space-y-1">
           {product.category && (
@@ -98,7 +99,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-4 pt-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -107,7 +108,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
               {formatPrice(displayPrice)}
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <ShoppingBag className="w-4 h-4" />
             {hasVariants ? (
@@ -117,28 +118,29 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             )}
           </div>
         </div>
-        
+
         {product.sku && (
-          <div className="mt-2 text-xs text-gray-500">
-            SKU: {product.sku}
-          </div>
+          <div className="mt-2 text-xs text-gray-500">SKU: {product.sku}</div>
         )}
-        
+
         {product.trackInventory && hasVariants && (
           <div className="mt-2 text-xs">
             {product.variants!.map((variant) => (
               <div key={variant.id} className="flex justify-between">
                 <span className="text-gray-600">{variant.title}</span>
-                <span className={cn(
-                  "font-medium",
-                  variant.inventory && variant.inventory.quantity > variant.inventory.reserved
-                    ? "text-green-600"
-                    : "text-red-600"
-                )}>
-                  {variant.inventory 
+                <span
+                  className={cn(
+                    "font-medium",
+                    variant.inventory &&
+                      variant.inventory.quantity > variant.inventory.reserved
+                      ? "text-green-600"
+                      : "text-red-600"
+                  )}
+                >
+                  {variant.inventory
                     ? variant.inventory.quantity - variant.inventory.reserved
-                    : 0
-                  } tersedia
+                    : 0}{" "}
+                  tersedia
                 </span>
               </div>
             ))}

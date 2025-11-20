@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProductForm } from "@/features/catalog/hooks/useProductForm";
+import {
+  useProductForm,
+  getProduk,
+  mapProductToFormValue,
+} from "@/features/catalog/hooks/useProductForm";
 import {
   Card,
   CardContent,
@@ -13,22 +17,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Image as ImageIcon, Package, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import CategorySelector from "@/components/category-selector";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const CatalogEditor = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const isEditMode = !!slug && slug !== "new";
+
+  const productQuery = useQuery({
+    queryKey: ["product", slug],
+    queryFn: () => getProduk(slug as string),
+    enabled: isEditMode,
+  });
 
   const {
     form,
@@ -41,11 +47,10 @@ export const CatalogEditor = () => {
     removeImage,
     addVariant,
     removeVariant,
-    addVariantOption,
-    removeVariantOption,
     addAttribute,
     removeAttribute,
   } = useProductForm({
+    productId: isEditMode ? productQuery.data?.id : undefined,
     onSuccess: () => {
       navigate("/catalog");
     },
@@ -56,12 +61,24 @@ export const CatalogEditor = () => {
 
   const {
     register,
-    control,
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = form;
 
+  console.log("form", form.formState);
+
+  useEffect(() => {
+    if (isEditMode && productQuery.data) {
+      try {
+        const values = mapProductToFormValue(productQuery.data);
+        reset(values);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [isEditMode, productQuery.data, reset]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     form.handleSubmit(onSubmit)();
@@ -69,6 +86,20 @@ export const CatalogEditor = () => {
 
   return (
     <div>
+      {isEditMode && productQuery.isPending && (
+        <div className="space-y-2 mb-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+      )}
+      {isEditMode && productQuery.isError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>
+            {(productQuery.error as Error)?.message ||
+              "Gagal memuat data produk"}
+          </AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={handleSubmit}>
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -135,7 +166,7 @@ export const CatalogEditor = () => {
                   />
                   {errors.name && (
                     <p className="text-sm text-red-500">
-                      {errors.name.message}
+                      {String(errors.name?.message || "")}
                     </p>
                   )}
                 </div>
@@ -150,7 +181,7 @@ export const CatalogEditor = () => {
                   />
                   {errors.description && (
                     <p className="text-sm text-red-500">
-                      {errors.description.message}
+                      {String(errors.description?.message || "")}
                     </p>
                   )}
                 </div>
@@ -158,27 +189,11 @@ export const CatalogEditor = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="categoryId">Kategori *</Label>
-                    <Select
-                      onValueChange={(value) => setValue("categoryId", value)}
-                    >
-                      <SelectTrigger
-                        className={errors.categoryId ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Pilih kategori" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="electronics">Elektronik</SelectItem>
-                        <SelectItem value="clothing">Pakaian</SelectItem>
-                        <SelectItem value="books">Buku</SelectItem>
-                        <SelectItem value="home">Rumah</SelectItem>
-                        <SelectItem value="sports">Olahraga</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.categoryId && (
-                      <p className="text-sm text-red-500">
-                        {errors.categoryId.message}
-                      </p>
-                    )}
+                    <CategorySelector
+                      onSaveSelect={(id: string) => {
+                        setValue("categoryId", id);
+                      }}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -186,11 +201,11 @@ export const CatalogEditor = () => {
                     <Input
                       id="sku"
                       {...register("sku")}
-                      placeholder="Stock Keeping Unit"
+                      placeholder="Masukkan SKU"
                     />
                     {errors.sku && (
                       <p className="text-sm text-red-500">
-                        {errors.sku.message}
+                        {String(errors.sku?.message || "")}
                       </p>
                     )}
                   </div>
@@ -209,7 +224,7 @@ export const CatalogEditor = () => {
                     />
                     {errors.basePrice && (
                       <p className="text-sm text-red-500">
-                        {errors.basePrice.message}
+                        {String(errors.basePrice?.message || "")}
                       </p>
                     )}
                   </div>
@@ -225,7 +240,7 @@ export const CatalogEditor = () => {
                     />
                     {errors.compareAtPrice && (
                       <p className="text-sm text-red-500">
-                        {errors.compareAtPrice.message}
+                        {String(errors.compareAtPrice?.message || "")}
                       </p>
                     )}
                   </div>
@@ -241,7 +256,7 @@ export const CatalogEditor = () => {
                     />
                     {errors.cost && (
                       <p className="text-sm text-red-500">
-                        {errors.cost.message}
+                        {String(errors.cost?.message || "")}
                       </p>
                     )}
                   </div>
@@ -258,7 +273,7 @@ export const CatalogEditor = () => {
                   />
                   {errors.weight && (
                     <p className="text-sm text-red-500">
-                      {errors.weight.message}
+                      {String(errors.weight?.message || "")}
                     </p>
                   )}
                 </div>
@@ -407,55 +422,6 @@ export const CatalogEditor = () => {
                               placeholder="Barcode"
                             />
                           </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <Label>Opsi Varian</Label>
-                            <Button
-                              type="button"
-                              onClick={() => addVariantOption(variantIndex)}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Tambah Opsi
-                            </Button>
-                          </div>
-
-                          {form
-                            .watch(`variants.${variantIndex}.options`)
-                            ?.map((option, optionIndex) => (
-                              <div key={optionIndex} className="flex gap-2">
-                                <Input
-                                  {...register(
-                                    `variants.${variantIndex}.options.${optionIndex}.optionName`
-                                  )}
-                                  placeholder="Nama opsi (contoh: Warna)"
-                                  className="flex-1"
-                                />
-                                <Input
-                                  {...register(
-                                    `variants.${variantIndex}.options.${optionIndex}.optionValue`
-                                  )}
-                                  placeholder="Nilai opsi (contoh: Merah)"
-                                  className="flex-1"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    removeVariantOption(
-                                      variantIndex,
-                                      optionIndex
-                                    )
-                                  }
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
                         </div>
                       </Card>
                     ))}
@@ -645,7 +611,7 @@ export const CatalogEditor = () => {
                   </p>
                   {errors.seoTitle && (
                     <p className="text-sm text-red-500">
-                      {errors.seoTitle.message}
+                      {String(errors.seoTitle?.message || "")}
                     </p>
                   )}
                 </div>
@@ -664,7 +630,7 @@ export const CatalogEditor = () => {
                   </p>
                   {errors.seoDescription && (
                     <p className="text-sm text-red-500">
-                      {errors.seoDescription.message}
+                      {String(errors.seoDescription?.message || "")}
                     </p>
                   )}
                 </div>

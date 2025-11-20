@@ -3,19 +3,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { productEditorApi } from "../api/productEditorApi";
-import { productFormSchema, type ProductFormData } from "../schema/productFormSchema";
+import { productApi, type Product } from "../api/productApi";
+import {
+  productFormSchema,
+  type ProductFormData,
+} from "../schema/productFormSchema";
 
-const PRODUCT_QUERY_KEY = 'products';
+const PRODUCT_QUERY_KEY = "products";
 
 interface UseProductFormProps {
+  productId?: string;
   onSuccess?: () => void;
   onError?: (error: any) => void;
 }
 
-export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {}) => {
+export const useProductForm = ({
+  productId,
+  onSuccess,
+  onError,
+}: UseProductFormProps = {}) => {
   const queryClient = useQueryClient();
 
-  const form = useForm<ProductFormData>({
+  const form = useForm<any>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
@@ -53,9 +62,9 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
     name: "attributes",
   });
 
-  // Mutation for creating product
-  const createProductMutation = useMutation({
-    mutationFn: productEditorApi.createProduct,
+  // Mutation for upsert product
+  const upsertProductMutation = useMutation({
+    mutationFn: productEditorApi.upsertProduct,
     onSuccess: () => {
       toast.success("Produk berhasil dibuat!");
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEY] });
@@ -63,16 +72,14 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error?.message || "Gagal membuat produk");
+      toast.error(error?.message || "Gagal menyimpan produk");
       onError?.(error);
     },
   });
 
   const onSubmit = (data: ProductFormData) => {
-    // Clean up empty optional fields and remove slug since backend will generate it
-    const { slug, ...dataWithoutSlug } = data;
     const cleanedData = {
-      ...dataWithoutSlug,
+      ...data,
       description: data.description || undefined,
       sku: data.sku || undefined,
       compareAtPrice: data.compareAtPrice || undefined,
@@ -82,12 +89,20 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
       seoDescription: data.seoDescription || undefined,
     };
 
-    createProductMutation.mutate(cleanedData);
+    const payload = {
+      id: productId ?? 0,
+      ...cleanedData,
+    } as any;
+    upsertProductMutation.mutate(payload);
   };
 
   // Helper functions
   const addImage = () => {
-    imagesArray.append({ url: "", alt: "", position: imagesArray.fields.length });
+    imagesArray.append({
+      url: "",
+      alt: "",
+      position: imagesArray.fields.length,
+    });
   };
 
   const removeImage = (index: number) => {
@@ -120,21 +135,32 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
   };
 
   const addVariantOption = (variantIndex: number) => {
-    const currentOptions = form.getValues(`variants.${variantIndex}.options`) || [];
+    const currentOptions =
+      form.getValues(`variants.${variantIndex}.options`) || [];
     form.setValue(`variants.${variantIndex}.options`, [
       ...currentOptions,
-      { optionName: "", optionValue: "" }
+      { optionName: "", optionValue: "" },
     ]);
   };
 
   const removeVariantOption = (variantIndex: number, optionIndex: number) => {
-    const currentOptions = form.getValues(`variants.${variantIndex}.options`) || [];
-    const newOptions = currentOptions.filter((_, i) => i !== optionIndex);
+    const currentOptions =
+      form.getValues(`variants.${variantIndex}.options`) || [];
+    const newOptions = (
+      currentOptions as Array<{ optionName: string; optionValue: string }>
+    ).filter(
+      (_: { optionName: string; optionValue: string }, i: number) =>
+        i !== optionIndex
+    );
     form.setValue(`variants.${variantIndex}.options`, newOptions);
   };
 
   const addAttribute = () => {
-    attributesArray.append({ name: "", value: "", position: attributesArray.fields.length });
+    attributesArray.append({
+      name: "",
+      value: "",
+      position: attributesArray.fields.length,
+    });
   };
 
   const removeAttribute = (index: number) => {
@@ -144,7 +170,7 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
   return {
     form,
     onSubmit,
-    isLoading: createProductMutation.isPending,
+    isLoading: upsertProductMutation.isPending,
     imagesArray,
     variantsArray,
     attributesArray,
@@ -158,3 +184,76 @@ export const useProductForm = ({ onSuccess, onError }: UseProductFormProps = {})
     removeAttribute,
   };
 };
+
+export async function getProduk(slug: string): Promise<Product> {
+  const resp = await productApi.getProductBySlug(slug);
+  if (!resp?.success || !resp.data) {
+    throw new Error("Gagal mengambil produk: format respons tidak valid");
+  }
+  return resp.data;
+}
+
+export function mapProductToFormValue(product: Product): ProductFormData {
+  if (!product || !product.id) {
+    throw new Error("Data produk tidak valid atau kosong");
+  }
+
+  return {
+    name: product.name,
+    description: product.description || undefined,
+    categoryId: product.categoryId,
+    sku: product.sku || undefined,
+    basePrice: product.basePrice,
+    compareAtPrice: product.compareAtPrice || undefined,
+    cost: product.cost || undefined,
+    weight: product.weight || undefined,
+    isActive: product.isActive,
+    isFeatured: product.isFeatured,
+    trackInventory: product.trackInventory,
+    seoTitle: product.seoTitle || undefined,
+    seoDescription: product.seoDescription || undefined,
+    images:
+      product.images?.map((m) => ({
+        url: m.url,
+        alt: m.alt || undefined,
+        position: m.position,
+      })) || [],
+    variants:
+      product.variants?.map((v) => ({
+        title: v.title,
+        sku: v.sku,
+        price: v.price,
+        compareAtPrice: v.compareAtPrice || undefined,
+        cost: v.cost || undefined,
+        weight: v.weight || undefined,
+        barcode: v.barcode || undefined,
+        image: v.image || undefined,
+        position: v.position,
+        isActive: v.isActive,
+        inventory: v.inventory
+          ? {
+              quantity: v.inventory.quantity,
+              reserved: v.inventory.reserved ?? 0,
+              lowStockThreshold: v.inventory.lowStockThreshold || undefined,
+            }
+          : undefined,
+        options: Array.isArray((v as any).options)
+          ? (
+              (v as any).options as Array<{
+                optionName: string;
+                optionValue: string;
+              }>
+            ).map((o) => ({
+              optionName: o.optionName,
+              optionValue: o.optionValue,
+            }))
+          : [],
+      })) || [],
+    attributes:
+      (product as any).attributes?.map((a: any) => ({
+        name: a.name,
+        value: a.value,
+        position: a.position,
+      })) || [],
+  };
+}

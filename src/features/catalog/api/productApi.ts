@@ -25,12 +25,11 @@ export interface Product {
     name: string;
     slug: string;
   };
-  media?: Array<{
+  images?: Array<{
     id: string;
     url: string;
     alt: string | null;
     position: number;
-    type: string;
   }>;
   variants?: Array<{
     id: string;
@@ -52,6 +51,10 @@ export interface Product {
   }>;
 }
 
+export interface ProductResponse {
+  success: boolean;
+  data: Product;
+}
 export interface GetProductsResponse {
   success: boolean;
   data: Product[];
@@ -72,8 +75,8 @@ export interface GetProductsQuery {
   category?: string;
   published?: boolean;
   featured?: boolean;
-  sortBy?: 'name' | 'price' | 'createdAt' | 'updatedAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "name" | "price" | "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
 }
 
 export class ProductApi {
@@ -91,7 +94,7 @@ export class ProductApi {
   async getProducts(query?: GetProductsQuery): Promise<GetProductsResponse> {
     try {
       const params = new URLSearchParams();
-      
+
       if (query) {
         Object.entries(query).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -100,7 +103,9 @@ export class ProductApi {
         });
       }
 
-      const response = await api.get<GetProductsResponse>(`/products?${params.toString()}`);
+      const response = await api.get<GetProductsResponse>(
+        `/products?${params.toString()}`
+      );
       return response.data;
     } catch (error: any) {
       if (error.response?.data) {
@@ -111,6 +116,31 @@ export class ProductApi {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred while fetching products",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  /**
+   * Mengambil detail produk berdasarkan slug
+   *
+   * @param slug Slug unik produk
+   * @returns Response dengan data produk
+   * @throws ErrorResponse jika API mengembalikan error
+   */
+  async getProductBySlug(slug: string): Promise<ProductResponse> {
+    try {
+      const response = await api.get<ProductResponse>(`/products/${slug}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while fetching product",
         },
       } as ErrorResponse;
     }

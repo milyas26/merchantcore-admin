@@ -31,9 +31,7 @@ export default function Catalog() {
   });
 
   const handleProductClick = (product: Product) => {
-    // Navigate to product edit page using slug with 5 random alphanumeric characters
-    const randomSuffix = Math.random().toString(36).substring(2, 7);
-    navigate(`/catalog/${product.slug}-${randomSuffix}`);
+    navigate(`/catalog/${product.slug}`);
   };
 
   const handleAddProduct = () => {

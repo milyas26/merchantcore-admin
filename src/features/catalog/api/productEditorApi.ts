@@ -1,11 +1,10 @@
 import api from "@/interceptors/axiosInterceptor";
 import type { ErrorResponse } from "@/shared/types/interface";
-import type { 
-  ProductFormData, 
-  ProductImageFormData, 
-  ProductVariantFormData, 
-  ProductAttributeFormData 
-} from "../schema/productFormSchema";
+import type { ProductFormData } from "../schema/productFormSchema";
+
+export interface UpsertProductRequest extends ProductFormData {
+  id?: string | number;
+}
 
 export interface CreateProductResponse {
   success: boolean;
@@ -55,6 +54,24 @@ export class ProductEditorApi {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred while creating product",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async upsertProduct(productData: UpsertProductRequest): Promise<CreateProductResponse> {
+    try {
+      const response = await api.post<CreateProductResponse>("/products", productData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while saving product",
         },
       } as ErrorResponse;
     }

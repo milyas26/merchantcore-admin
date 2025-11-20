@@ -13,21 +13,33 @@ export const variantOptionFormSchema = z.object({
 });
 
 export const productVariantFormSchema = z.object({
-  title: z.string().min(1, "Judul varian wajib diisi").max(255, "Judul varian maksimal 255 karakter"),
-  sku: z.string().min(1, "SKU wajib diisi").max(100, "SKU maksimal 100 karakter"),
+  title: z
+    .string()
+    .min(1, "Judul varian wajib diisi")
+    .max(255, "Judul varian maksimal 255 karakter"),
+  sku: z
+    .string()
+    .min(1, "SKU wajib diisi")
+    .max(100, "SKU maksimal 100 karakter"),
   price: z.number().positive("Harga harus positif"),
   compareAtPrice: z.number().positive("Harga banding harus positif").optional(),
   cost: z.number().positive("Biaya harus positif").optional(),
   weight: z.number().positive("Berat harus positif").optional(),
   barcode: z.string().max(100, "Barcode maksimal 100 karakter").optional(),
-  image: z.string().url("URL gambar tidak valid").optional(),
+  image: z.string().optional(),
   position: z.number().int().nonnegative().optional().default(0),
   isActive: z.boolean().optional().default(true),
-  inventory: z.object({
-    quantity: z.number().int().nonnegative("Stok tidak boleh negatif"),
-    reserved: z.number().int().nonnegative().optional().default(0),
-    lowStockThreshold: z.number().int().positive("Ambang stok rendah harus positif").optional(),
-  }).optional(),
+  inventory: z
+    .object({
+      quantity: z.number().int().nonnegative("Stok tidak boleh negatif"),
+      reserved: z.number().int().nonnegative().optional().default(0),
+      lowStockThreshold: z
+        .number()
+        .int()
+        .positive("Ambang stok rendah harus positif")
+        .optional(),
+    })
+    .optional(),
   options: z.array(variantOptionFormSchema).optional(),
 });
 
@@ -38,14 +50,17 @@ export const productAttributeFormSchema = z.object({
 });
 
 export const productFormSchema = z.object({
-  name: z.string().min(1, "Nama produk wajib diisi").max(255, "Nama produk maksimal 255 karakter"),
-  slug: z.string()
-    .max(255, "Slug maksimal 255 karakter")
-    .regex(/^[a-z0-9-]+$/, "Slug hanya boleh mengandung huruf kecil, angka, dan tanda strip")
-    .optional(),
+  name: z
+    .string()
+    .min(1, "Nama produk wajib diisi")
+    .max(255, "Nama produk maksimal 255 karakter"),
   description: z.string().optional(),
-  categoryId: z.string().uuid("Kategori harus dipilih"),
-  sku: z.string().min(1, "SKU wajib diisi").max(100, "SKU maksimal 100 karakter").optional(),
+  categoryId: z.string("Kategori harus dipilih"),
+  sku: z
+    .string()
+    .min(1, "SKU wajib diisi")
+    .max(100, "SKU maksimal 100 karakter")
+    .optional(),
   basePrice: z.number().positive("Harga dasar harus positif"),
   compareAtPrice: z.number().positive("Harga banding harus positif").optional(),
   cost: z.number().positive("Biaya harus positif").optional(),
@@ -54,7 +69,10 @@ export const productFormSchema = z.object({
   isFeatured: z.boolean().optional().default(false),
   trackInventory: z.boolean().optional().default(true),
   seoTitle: z.string().max(255, "Judul SEO maksimal 255 karakter").optional(),
-  seoDescription: z.string().max(500, "Deskripsi SEO maksimal 500 karakter").optional(),
+  seoDescription: z
+    .string()
+    .max(500, "Deskripsi SEO maksimal 500 karakter")
+    .optional(),
   images: z.array(productImageFormSchema).optional(),
   variants: z.array(productVariantFormSchema).optional(),
   attributes: z.array(productAttributeFormSchema).optional(),
