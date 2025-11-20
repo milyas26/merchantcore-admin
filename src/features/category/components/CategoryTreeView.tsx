@@ -67,26 +67,34 @@ export function CategoryTreeView({ categories, onEdit, onDelete, onAddChild, onM
 
   const moveInState = useCallback(
     (id: string, newParentId: string | null) => {
-      const removeFromParent = (
-        nodes: CategoryTreeNode[]
-      ): { node?: CategoryTreeNode } => {
+      const draft = structuredClone(treeData) as CategoryTreeNode[];
+
+      // Remove from root list if present
+      const rootIdx = draft.findIndex((r) => r.id === id);
+      let movedNode: CategoryTreeNode | undefined;
+      if (rootIdx >= 0) {
+        [movedNode] = draft.splice(rootIdx, 1);
+      }
+
+      // Remove from any parent children if not already removed
+      const removeFromChildren = (nodes: CategoryTreeNode[]): boolean => {
         for (const n of nodes) {
           const idx = n.children.findIndex((c) => c.id === id);
           if (idx >= 0) {
-            const [moved] = n.children.splice(idx, 1);
-            return { node: moved };
+            [movedNode] = n.children.splice(idx, 1);
+            return true;
           }
-          const res = removeFromParent(n.children);
-          if (res.node) return res;
+          if (removeFromChildren(n.children)) return true;
         }
-        return {};
+        return false;
       };
+      if (!movedNode) removeFromChildren(draft);
 
-      const draft = structuredClone(treeData) as CategoryTreeNode[];
-      const { node } = removeFromParent(draft);
-      const movedNode = node ?? findNodeById(draft, id);
+      // Fallback: locate node if still not found
+      if (!movedNode) movedNode = findNodeById(draft, id) ?? undefined;
       if (!movedNode) return draft;
 
+      // Attach to new parent or root
       if (newParentId) {
         const parent = findNodeById(draft, newParentId);
         if (!parent) return draft;
@@ -98,6 +106,7 @@ export function CategoryTreeView({ categories, onEdit, onDelete, onAddChild, onM
         movedNode.level = 0;
         draft.push(movedNode);
       }
+
       return draft;
     },
     [treeData, findNodeById]
