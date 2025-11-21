@@ -37,7 +37,6 @@ export const useCategoryForm = ({
     defaultValues: {
       name: "",
       slug: "",
-      description: "",
       image: "",
       parentId: undefined,
       isActive: true,
@@ -47,7 +46,6 @@ export const useCategoryForm = ({
       ? {
           name: categoryData.data.name,
           slug: categoryData.data.slug,
-          description: categoryData.data.description || "",
           image: categoryData.data.image || "",
           parentId: categoryData.data.parentId,
           isActive: categoryData.data.isActive,
@@ -62,8 +60,6 @@ export const useCategoryForm = ({
       const requestData = {
         name: data.name,
         slug: data.slug,
-        description:
-          data.description?.trim?.() === "" ? null : data.description,
         image: data.image?.trim?.() === "" ? null : data.image,
         parentId: (data as any).parentId === null ? null : data.parentId,
         isActive: data.isActive,

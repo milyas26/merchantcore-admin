@@ -7,3 +7,5 @@ export function cn(...inputs: ClassValue[]) {
 
 // Re-export cookie helpers for convenience
 export * from "./cookies"
+// Re-export slug helpers
+export * from "./slugUtils"

@@ -15,17 +15,16 @@ import { useState } from "react";
 import { categoryService } from "@/features/category/services/categoryService";
 import { toast } from "sonner";
 import { CategoryTreeView } from "@/features/category/components/CategoryTreeView";
-import { CategoryEditorModal } from "@/features/category/components/CategoryEditorModal";
 
 export default function Category() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [editCategoryId, setEditCategoryId] = useState<string | undefined>(
+  const [inlineEditId, setInlineEditId] = useState<string | undefined>(
     undefined
   );
-  const [defaultParentId, setDefaultParentId] = useState<string | undefined>(
+  const [inlineChildParentId, setInlineChildParentId] = useState<string | undefined>(
     undefined
   );
+  const [inlineRootRequested, setInlineRootRequested] = useState(false);
   const { data, isLoading, error, refetch } = useCategoriesQuery({
     search: searchTerm || undefined,
     limit: 50,
@@ -36,21 +35,21 @@ export default function Category() {
   const categories = data?.data || [];
 
   const handleCreateCategory = () => {
-    setEditCategoryId(undefined);
-    setDefaultParentId(undefined);
-    setIsEditorOpen(true);
+    setInlineEditId(undefined);
+    setInlineChildParentId(undefined);
+    setInlineRootRequested(true);
   };
 
   const handleEditCategory = (id: string) => {
-    setEditCategoryId(id);
-    setDefaultParentId(undefined);
-    setIsEditorOpen(true);
+    setInlineEditId(id);
+    setInlineChildParentId(undefined);
+    setInlineRootRequested(false);
   };
 
   const handleAddChild = (parentId: string) => {
-    setEditCategoryId(undefined);
-    setDefaultParentId(parentId);
-    setIsEditorOpen(true);
+    setInlineEditId(undefined);
+    setInlineChildParentId(parentId);
+    setInlineRootRequested(false);
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
@@ -81,6 +80,17 @@ export default function Category() {
       toast.error("Gagal memindahkan kategori");
       console.error("Move error:", error);
     }
+  };
+
+  const clearInlineState = () => {
+    setInlineEditId(undefined);
+    setInlineChildParentId(undefined);
+    setInlineRootRequested(false);
+  };
+
+  const handleInlineSaved = () => {
+    clearInlineState();
+    refetch();
   };
 
   return (
@@ -141,22 +151,15 @@ export default function Category() {
               onDelete={handleDeleteCategory}
               onAddChild={handleAddChild}
               onMoveCategory={handleMoveCategory}
+              editingId={inlineEditId}
+              addChildParentId={inlineChildParentId}
+              addRootRequested={inlineRootRequested}
+              onInlineSaved={handleInlineSaved}
+              onInlineCancel={clearInlineState}
             />
           )}
         </CardContent>
       </Card>
-      <CategoryEditorModal
-        open={isEditorOpen}
-        onOpenChange={(open) => setIsEditorOpen(open)}
-        categoryId={editCategoryId}
-        defaultParentId={defaultParentId}
-        onSuccess={() => {
-          setIsEditorOpen(false);
-          setEditCategoryId(undefined);
-          setDefaultParentId(undefined);
-          refetch();
-        }}
-      />
     </div>
   );
 }
