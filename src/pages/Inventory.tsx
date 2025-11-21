@@ -26,6 +26,7 @@ import {
   ArrowUpDown,
   Eye,
   Pencil,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { computeLowStock } from "@/features/inventory/utils/inventoryHelpers";
@@ -248,6 +249,13 @@ export default function Inventory() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <p className="text-muted-foreground mb-4">Belum ada item inventory</p>
+            <Button onClick={() => navigate("/catalog/new")}>
+              <Plus className="mr-2 size-4" /> Tambah Produk
+            </Button>
           </div>
         ) : (
           <Table className="min-w-[900px]">
