@@ -131,7 +131,7 @@ export function StoreSwitcherWithFeature() {
                   <Store className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">
+                  <span className="font-semibold line-clamp-1">
                     {currentStore?.name || "Select Store"}
                   </span>
                   {currentStore?.description && (
@@ -160,7 +160,9 @@ export function StoreSwitcherWithFeature() {
                       <Store className="h-3 w-3" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-medium">{store.name}</span>
+                      <span className="font-medium line-clamp-1">
+                        {store.name}
+                      </span>
                       {store.description && (
                         <span className="text-xs text-muted-foreground line-clamp-1">
                           {store.description}

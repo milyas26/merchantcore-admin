@@ -48,7 +48,9 @@ export function StoreSwitcher({
                 <Store className="size-4" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">{selectedStore.name}</span>
+                <span className="font-semibold line-clamp-1">
+                  {selectedStore.name}
+                </span>
                 {selectedStore.description && (
                   <span className="text-xs text-muted-foreground">
                     {selectedStore.description}
@@ -81,12 +83,14 @@ export function StoreSwitcher({
                     )}
                   </div>
                 </div>
-                {store.id === selectedStore.id && <Check className="ml-auto h-4 w-4" />}
+                {store.id === selectedStore.id && (
+                  <Check className="ml-auto h-4 w-4" />
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
