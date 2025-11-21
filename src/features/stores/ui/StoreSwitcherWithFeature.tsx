@@ -144,7 +144,7 @@ export function StoreSwitcherWithFeature() {
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-[--radix-dropdown-menu-trigger-width] min-w-[250px] max-w-[250px]"
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-[250px] max-w-[250px] max-h-[300px] overflow-y-auto"
               align="start"
             >
               <DropdownMenuLabel>My Stores</DropdownMenuLabel>

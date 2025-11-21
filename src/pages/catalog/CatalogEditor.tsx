@@ -85,8 +85,6 @@ export const CatalogEditor = () => {
       firstVariant?.title === "Default")
   );
 
-  console.log("form", form.formState);
-
   useEffect(() => {
     if (isEditMode && productQuery.data) {
       try {

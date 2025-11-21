@@ -41,7 +41,6 @@ export default function Catalog() {
   };
 
   const handleAddProduct = () => {
-    // Navigate to create product page
     navigate("/catalog/new");
   };
 
