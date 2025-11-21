@@ -139,11 +139,6 @@ export default function Category() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : categories.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No categories found.{" "}
-              {searchTerm && `Try adjusting your search for "${searchTerm}".`}
-            </div>
           ) : (
             <CategoryTreeView
               categories={categories}

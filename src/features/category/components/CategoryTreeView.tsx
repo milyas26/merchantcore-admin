@@ -225,56 +225,56 @@ export function CategoryTreeView({
 
   return (
     <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
-      {visibleCategories.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          No categories found.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {rootDropHint}
-          {addRootRequested && (
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={rootName}
-                  onChange={(e) => setRootName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      saveRoot();
-                    } else if (e.key === "Escape") {
-                      onInlineCancel?.();
-                    }
-                  }}
-                  onBlur={saveRoot}
-                  autoFocus
-                  placeholder="Nama kategori"
-                  className="h-8"
-                />
-                {savingRoot && (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
-              {errorRoot && (
-                <p className="text-xs text-destructive">{errorRoot}</p>
+      <div className="space-y-2">
+        {addRootRequested && (
+          <div className="p-3 border rounded-lg">
+            <div className="flex items-center gap-2">
+              <Input
+                value={rootName}
+                onChange={(e) => setRootName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    saveRoot();
+                  } else if (e.key === "Escape") {
+                    onInlineCancel?.();
+                  }
+                }}
+                onBlur={saveRoot}
+                autoFocus
+                placeholder="Nama kategori"
+                className="h-8"
+              />
+              {savingRoot && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
-          )}
-          {treeData.map((category) => (
-            <CategoryTreeItem
-              key={category.id}
-              category={category}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleExpand={handleToggleExpand}
-              onAddChild={onAddChild}
-              editingTargetId={editingId}
-              addChildTargetId={addChildParentId}
-              onInlineSaved={onInlineSaved}
-              onInlineCancel={onInlineCancel}
-            />
-          ))}
-        </div>
-      )}
+            {errorRoot && (
+              <p className="text-xs text-destructive">{errorRoot}</p>
+            )}
+          </div>
+        )}
+        {visibleCategories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No categories found.</div>
+        ) : (
+          <>
+            {rootDropHint}
+            {treeData.map((category) => (
+              <CategoryTreeItem
+                key={category.id}
+                category={category}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onToggleExpand={handleToggleExpand}
+                onAddChild={onAddChild}
+                editingTargetId={editingId}
+                addChildTargetId={addChildParentId}
+                onInlineSaved={onInlineSaved}
+                onInlineCancel={onInlineCancel}
+              />
+            ))}
+          </>
+        )}
+      </div>
     </DndContext>
   );
 }

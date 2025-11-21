@@ -110,7 +110,9 @@ const CategorySelector = ({
               )}
             </Button>
           ) : (
-            <div className="w-6" />
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled>
+              <ChevronRight className="h-4 w-4 opacity-50" />
+            </Button>
           )}
           <Input
             id={`category-${node.id}`}
@@ -180,9 +182,7 @@ const CategorySelector = ({
             <Button variant="outline">Cancel</Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button 
-              onClick={onSubmit}
-            >Simpan</Button>
+            <Button onClick={onSubmit}>Simpan</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
