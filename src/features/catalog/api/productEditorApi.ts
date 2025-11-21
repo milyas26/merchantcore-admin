@@ -16,12 +16,17 @@ export interface CreateProductResponse {
     categoryId: string;
     sku: string | null;
     basePrice: number;
-    compareAtPrice: number | null;
     cost: number | null;
     weight: number | null;
     isActive: boolean;
     isFeatured: boolean;
     trackInventory: boolean;
+    barcode: string | null;
+    inventory?: {
+      quantity: number;
+      reserved: number;
+      lowStockThreshold: number | null;
+    };
     seoTitle: string | null;
     seoDescription: string | null;
     createdAt: string;

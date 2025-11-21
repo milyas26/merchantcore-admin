@@ -99,7 +99,7 @@ export default function Category() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <CardTitle>Category Catalog</CardTitle>
+              <CardTitle>Category</CardTitle>
               <CardDescription>
                 Manage your category catalog, categories, and category
                 information.

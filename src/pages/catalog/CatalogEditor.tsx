@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Controller, useWatch } from "react-hook-form";
 import { Plus, Trash2, Image as ImageIcon, Package, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -67,6 +68,23 @@ export const CatalogEditor = () => {
     reset,
   } = form;
 
+  const isVariant = useWatch({ control: form.control, name: "isVariant" });
+
+  const variantCount =
+    isEditMode && productQuery.data
+      ? productQuery.data.variants?.length ?? 0
+      : 0;
+  const firstVariant =
+    isEditMode && productQuery.data
+      ? productQuery.data.variants?.[0]
+      : undefined;
+  const isDefaultVariantOnly = !!(
+    isEditMode &&
+    variantCount === 1 &&
+    ((firstVariant?.sku && String(firstVariant.sku).endsWith("-DEFAULT")) ||
+      firstVariant?.title === "Default")
+  );
+
   console.log("form", form.formState);
 
   useEffect(() => {
@@ -74,11 +92,29 @@ export const CatalogEditor = () => {
       try {
         const values = mapProductToFormValue(productQuery.data);
         reset(values);
+        const v = productQuery.data.variants?.[0];
+        if (isDefaultVariantOnly && v) {
+          if (typeof v.barcode !== "undefined") {
+            setValue("barcode", v.barcode || "");
+          }
+          if (productQuery.data.trackInventory) {
+            if (v.inventory) {
+              setValue("inventory.quantity", v.inventory.quantity ?? 0);
+              setValue("inventory.reserved", v.inventory.reserved ?? 0);
+              if (typeof v.inventory.lowStockThreshold !== "undefined") {
+                setValue(
+                  "inventory.lowStockThreshold",
+                  v.inventory.lowStockThreshold ?? undefined
+                );
+              }
+            }
+          }
+        }
       } catch (e) {
         console.error(e);
       }
     }
-  }, [isEditMode, productQuery.data, reset]);
+  }, [isEditMode, productQuery.data, reset, isDefaultVariantOnly, setValue]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     form.handleSubmit(onSubmit)();
@@ -143,7 +179,7 @@ export const CatalogEditor = () => {
         <Tabs defaultValue="basic" className="space-y-4">
           <TabsList>
             <TabsTrigger value="basic">Informasi Dasar</TabsTrigger>
-            <TabsTrigger value="variants">Varian</TabsTrigger>
+            {isVariant && <TabsTrigger value="variants">Varian</TabsTrigger>}
             <TabsTrigger value="images">Gambar</TabsTrigger>
             <TabsTrigger value="attributes">Atribut</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -193,6 +229,7 @@ export const CatalogEditor = () => {
                       onSaveSelect={(id: string) => {
                         setValue("categoryId", id);
                       }}
+                      defaultValue={productQuery.data?.categoryId || ""}
                     />
                   </div>
 
@@ -211,9 +248,9 @@ export const CatalogEditor = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="basePrice">Harga Dasar *</Label>
+                    <Label htmlFor="basePrice">Harga Jual *</Label>
                     <Input
                       id="basePrice"
                       type="number"
@@ -230,23 +267,7 @@ export const CatalogEditor = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="compareAtPrice">Harga Banding</Label>
-                    <Input
-                      id="compareAtPrice"
-                      type="number"
-                      step="0.01"
-                      {...register("compareAtPrice", { valueAsNumber: true })}
-                      placeholder="0.00"
-                    />
-                    {errors.compareAtPrice && (
-                      <p className="text-sm text-red-500">
-                        {String(errors.compareAtPrice?.message || "")}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cost">Biaya</Label>
+                    <Label htmlFor="cost">HPP</Label>
                     <Input
                       id="cost"
                       type="number"
@@ -277,8 +298,72 @@ export const CatalogEditor = () => {
                     </p>
                   )}
                 </div>
+                {!isVariant && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="barcode">Barcode</Label>
+                      <Input
+                        id="barcode"
+                        {...register("barcode")}
+                        placeholder="Masukkan barcode produk"
+                      />
+                      {errors.barcode && (
+                        <p className="text-sm text-red-500">
+                          {String(errors.barcode?.message || "")}
+                        </p>
+                      )}
+                      {(() => {
+                        const v = watch("variants") || [];
+                        const b = watch("barcode");
+                        const dup = b && v.some((x: any) => x?.barcode === b);
+                        return dup && !isDefaultVariantOnly ? (
+                          <p className="text-sm text-red-500">
+                            Barcode produk tidak boleh sama dengan barcode
+                            varian
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    {watch("trackInventory") && (
+                      <div className="space-y-2">
+                        <Label htmlFor="inventory.quantity">Quantity</Label>
+                        <Input
+                          id="inventory.quantity"
+                          type="number"
+                          {...register("inventory.quantity", {
+                            valueAsNumber: true,
+                          })}
+                          placeholder="0"
+                        />
+                        {(errors as any)?.inventory?.quantity && (
+                          <p className="text-sm text-red-500">
+                            {String(
+                              (errors as any)?.inventory?.quantity?.message ||
+                                ""
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="isVariant"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Switch
+                          id="isVariant"
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="isVariant">Produk Varian</Label>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch id="isActive" {...register("isActive")} />
                     <Label htmlFor="isActive">Aktif</Label>
@@ -366,9 +451,9 @@ export const CatalogEditor = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="space-y-2">
-                            <Label>Harga Varian *</Label>
+                            <Label>Harga Jual Varian *</Label>
                             <Input
                               type="number"
                               step="0.01"
@@ -379,19 +464,7 @@ export const CatalogEditor = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Harga Banding</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...register(
-                                `variants.${variantIndex}.compareAtPrice`,
-                                { valueAsNumber: true }
-                              )}
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Biaya</Label>
+                            <Label>HPP</Label>
                             <Input
                               type="number"
                               step="0.01"
@@ -421,6 +494,29 @@ export const CatalogEditor = () => {
                               {...register(`variants.${variantIndex}.barcode`)}
                               placeholder="Barcode"
                             />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Stok (Quantity)</Label>
+                            <Input
+                              type="number"
+                              {...register(
+                                `variants.${variantIndex}.inventory.quantity`,
+                                { valueAsNumber: true }
+                              )}
+                              placeholder="0"
+                            />
+                            {(errors as any)?.variants?.[variantIndex]
+                              ?.inventory?.quantity && (
+                              <p className="text-sm text-red-500">
+                                {String(
+                                  (errors as any)?.variants?.[variantIndex]
+                                    ?.inventory?.quantity?.message || ""
+                                )}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </Card>

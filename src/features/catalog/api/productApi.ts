@@ -9,12 +9,18 @@ export interface Product {
   categoryId: string;
   sku: string | null;
   basePrice: number;
-  compareAtPrice: number | null;
   cost: number | null;
   weight: number | null;
   isActive: boolean;
   isFeatured: boolean;
   trackInventory: boolean;
+  isVariant: boolean;
+  barcode: string | null;
+  inventory?: {
+    quantity: number;
+    reserved: number;
+    lowStockThreshold: number | null;
+  };
   seoTitle: string | null;
   seoDescription: string | null;
   position: number;
@@ -36,7 +42,6 @@ export interface Product {
     title: string;
     sku: string;
     price: number;
-    compareAtPrice: number | null;
     cost: number | null;
     weight: number | null;
     barcode: string | null;

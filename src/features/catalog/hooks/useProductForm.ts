@@ -32,12 +32,18 @@ export const useProductForm = ({
       categoryId: "",
       sku: "",
       basePrice: 0,
-      compareAtPrice: undefined,
       cost: undefined,
       weight: undefined,
       isActive: true,
       isFeatured: false,
       trackInventory: true,
+      isVariant: false,
+      barcode: "",
+      inventory: {
+        quantity: 0,
+        reserved: 0,
+        lowStockThreshold: 10,
+      },
       seoTitle: "",
       seoDescription: "",
       images: [],
@@ -65,29 +71,93 @@ export const useProductForm = ({
   // Mutation for upsert product
   const upsertProductMutation = useMutation({
     mutationFn: productEditorApi.upsertProduct,
-    onSuccess: () => {
-      toast.success("Produk berhasil dibuat!");
+    onSuccess: async (res: any, variables: any) => {
+      try {
+        const sentVariants = Array.isArray(variables?.variants)
+          ? variables.variants
+          : [];
+        const sentDefaultBarcode =
+          sentVariants.length === 1 ? sentVariants[0]?.barcode : undefined;
+
+        if (sentDefaultBarcode) {
+          const fetched = await productApi.getProductBySlug(res?.data?.slug);
+          const persistedBarcode = fetched?.data?.variants?.[0]?.barcode;
+          if (!persistedBarcode || String(persistedBarcode) !== String(sentDefaultBarcode)) {
+            toast.error("Barcode varian default tidak tersimpan. Mohon periksa kembali.");
+          } else {
+            toast.success("Produk berhasil dibuat!");
+          }
+        } else {
+          toast.success("Produk berhasil dibuat!");
+        }
+      } catch {
+        toast.success("Produk berhasil dibuat!");
+      }
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEY] });
       form.reset();
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error?.message || "Gagal menyimpan produk");
+      const message = (error as any)?.error?.message || (error as any)?.message;
+      toast.error(message || "Gagal menyimpan produk");
       onError?.(error);
     },
   });
 
   const onSubmit = (data: ProductFormData) => {
-    const cleanedData = {
+    const cleanedData: any = {
       ...data,
       description: data.description || undefined,
       sku: data.sku || undefined,
-      compareAtPrice: data.compareAtPrice || undefined,
       cost: data.cost || undefined,
       weight: data.weight || undefined,
       seoTitle: data.seoTitle || undefined,
       seoDescription: data.seoDescription || undefined,
     };
+
+    const productBarcode = data.barcode?.trim() ? data.barcode.trim() : undefined;
+    const productInventory = data.trackInventory
+      ? {
+          quantity: data.inventory?.quantity ?? 0,
+          reserved: data.inventory?.reserved ?? 0,
+          lowStockThreshold: data.inventory?.lowStockThreshold ?? undefined,
+        }
+      : undefined;
+
+    const hasVariants = Array.isArray(data.variants) && data.variants.length > 0;
+    if (!data.isVariant) {
+      cleanedData.variants = [
+        {
+          title: "Default",
+          sku: data.sku || "",
+          price: data.basePrice,
+          cost: data.cost ?? undefined,
+          weight: data.weight ?? undefined,
+          barcode: productBarcode,
+          image: undefined,
+          position: 0,
+          isActive: data.isActive ?? true,
+          inventory: productInventory,
+          options: [],
+        },
+      ];
+    } else if (!hasVariants) {
+      cleanedData.variants = [
+        {
+          title: "Default",
+          sku: data.sku || "",
+          price: data.basePrice,
+          cost: data.cost ?? undefined,
+          weight: data.weight ?? undefined,
+          barcode: productBarcode,
+          image: undefined,
+          position: 0,
+          isActive: data.isActive ?? true,
+          inventory: productInventory,
+          options: [],
+        },
+      ];
+    }
 
     const payload = {
       id: productId ?? 0,
@@ -114,7 +184,6 @@ export const useProductForm = ({
       title: "",
       sku: "",
       price: 0,
-      compareAtPrice: undefined,
       cost: undefined,
       weight: undefined,
       barcode: "",
@@ -128,10 +197,15 @@ export const useProductForm = ({
       },
       options: [],
     });
+    form.setValue("isVariant", true);
   };
 
   const removeVariant = (index: number) => {
     variantsArray.remove(index);
+    const remaining = (form.getValues("variants") || []).length;
+    if (remaining === 0) {
+      form.setValue("isVariant", false);
+    }
   };
 
   const addVariantOption = (variantIndex: number) => {
@@ -204,12 +278,20 @@ export function mapProductToFormValue(product: Product): ProductFormData {
     categoryId: product.categoryId,
     sku: product.sku || undefined,
     basePrice: product.basePrice,
-    compareAtPrice: product.compareAtPrice || undefined,
     cost: product.cost || undefined,
     weight: product.weight || undefined,
     isActive: product.isActive,
     isFeatured: product.isFeatured,
     trackInventory: product.trackInventory,
+    isVariant: (product as any).isVariant ?? false,
+    barcode: (product as any).barcode || undefined,
+    inventory: (product as any).inventory
+      ? {
+          quantity: (product as any).inventory.quantity,
+          reserved: (product as any).inventory.reserved ?? 0,
+          lowStockThreshold: (product as any).inventory.lowStockThreshold || undefined,
+        }
+      : undefined,
     seoTitle: product.seoTitle || undefined,
     seoDescription: product.seoDescription || undefined,
     images:
@@ -223,7 +305,6 @@ export function mapProductToFormValue(product: Product): ProductFormData {
         title: v.title,
         sku: v.sku,
         price: v.price,
-        compareAtPrice: v.compareAtPrice || undefined,
         cost: v.cost || undefined,
         weight: v.weight || undefined,
         barcode: v.barcode || undefined,

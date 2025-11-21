@@ -15,7 +15,7 @@ import Reports from "./pages/Reports";
 import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
-import Category from "./pages/category/Category";
+import Category from "./pages/Category";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();

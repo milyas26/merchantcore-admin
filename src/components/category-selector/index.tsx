@@ -21,8 +21,10 @@ import type { Category } from "@/features/category/api/categoryApi";
 
 const CategorySelector = ({
   onSaveSelect,
+  defaultValue,
 }: {
   onSaveSelect: (id: string) => void;
+  defaultValue?: string;
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const { data, isLoading } = useCategoriesQuery({
@@ -39,6 +41,12 @@ const CategorySelector = ({
     const categories: Category[] = data?.data ?? [];
     setTreeData(buildCategoryTree(categories));
   }, [data]);
+
+  React.useEffect(() => {
+    if (defaultValue) {
+      setSelectedId((prev) => (prev == null ? defaultValue : prev));
+    }
+  }, [defaultValue]);
 
   const handleToggleExpand = (categoryId: string) => {
     const updateExpandedState = (
