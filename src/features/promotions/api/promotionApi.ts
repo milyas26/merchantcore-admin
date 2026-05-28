@@ -9,8 +9,14 @@ export interface PromotionProduct {
     name: string;
     slug: string;
     basePrice: number;
+    sku: string | null;
     images: { url: string; alt: string | null }[];
   };
+}
+
+export interface PromotionProductsResponse {
+  success: boolean;
+  data: PromotionProduct[];
 }
 
 export interface Promotion {
@@ -104,6 +110,11 @@ export class PromotionApi {
 
   async getPromotionById(id: string): Promise<PromotionResponse> {
     const res = await api.get<PromotionResponse>(`/promotions/${id}`);
+    return res.data;
+  }
+
+  async getPromotionProducts(id: string): Promise<PromotionProductsResponse> {
+    const res = await api.get<PromotionProductsResponse>(`/promotions/${id}/products`);
     return res.data;
   }
 

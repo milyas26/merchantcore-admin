@@ -103,7 +103,8 @@ export class ProductApi {
       if (query) {
         Object.entries(query).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            params.append(key, value.toString());
+            const paramKey = key === "search" ? "q" : key;
+            params.append(paramKey, value.toString());
           }
         });
       }

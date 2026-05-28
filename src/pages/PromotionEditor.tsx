@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,11 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Percent, Tag, Gift, Calendar, Package, ArrowLeft, X, Search,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Percent, Tag, Gift, ArrowLeft, Plus, Trash2, Package,
 } from "lucide-react";
 import {
   promotionFormSchema,
@@ -25,8 +27,9 @@ import {
   useCreatePromotion,
   useUpdatePromotion,
   usePromotionQuery,
-  type Promotion,
+  usePromotionProductsQuery,
 } from "@/features/promotions";
+import { ProductPickerModal } from "@/features/promotions/ui/ProductPickerModal";
 import { useProductsQuery } from "@/features/catalog";
 import { cn } from "@/lib/utils";
 
@@ -39,30 +42,22 @@ const typeOptions = [
 const formatPrice = (v: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(v);
 
-const mapPromotionToForm = (p: Promotion): PromotionFormData => ({
-  title: p.title,
-  description: p.description || "",
-  couponCode: p.couponCode || "",
-  type: p.type,
-  value: p.value ?? undefined,
-  currency: p.currency || undefined,
-  startsAt: p.startsAt ? p.startsAt.slice(0, 16) : "",
-  endsAt: p.endsAt ? p.endsAt.slice(0, 16) : "",
-  isActive: p.isActive,
-  minSubtotal: p.minSubtotal ?? undefined,
-  usageLimit: p.usageLimit ?? undefined,
-  usageLimitPerCustomer: p.usageLimitPerCustomer ?? undefined,
-  productIds: p.promotionProducts?.map((pp) => pp.productId) || [],
-});
+const calcDiscountedPrice = (price: number, type: string, value?: number) => {
+  if (!value || type === "FREE_SHIPPING") return price;
+  if (type === "PERCENTAGE") return price - (price * value / 100);
+  return price - value;
+};
 
 export default function PromotionEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = !!id && id !== "new";
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { data: promoResp, isLoading: isLoadingPromo, error: promoError } = usePromotionQuery(isEdit ? id! : "");
   const promoData = promoResp?.data;
-  const { data: productsData } = useProductsQuery({ page: 1, limit: 100, sortBy: "createdAt", sortOrder: "desc" });
+  const { data: promoProductsResp } = usePromotionProductsQuery(isEdit ? id! : "");
+  const { data: productsData } = useProductsQuery({ page: 1, limit: 100, sortBy: "name", sortOrder: "asc" });
   const createMutation = useCreatePromotion();
   const updateMutation = useUpdatePromotion();
 
@@ -78,26 +73,60 @@ export default function PromotionEditor() {
     },
   });
 
-  const { register, watch, setValue, reset, formState: { errors } } = form;
+  const { register, setValue, reset, formState: { errors } } = form;
   const promoType = useWatch({ control: form.control, name: "type" });
-  const watchProductIds = useWatch({ control: form.control, name: "productIds" });
+  const promoValue = useWatch({ control: form.control, name: "value" });
+  const watchProductIds: string[] = useWatch({ control: form.control, name: "productIds" }) || [];
 
   useEffect(() => {
     if (isEdit && promoData) {
-      reset(mapPromotionToForm(promoData));
+      reset({
+        title: promoData.title,
+        description: promoData.description || "",
+        couponCode: promoData.couponCode || "",
+        type: promoData.type,
+        value: promoData.value ?? undefined,
+        currency: promoData.currency || "IDR",
+        startsAt: promoData.startsAt ? promoData.startsAt.slice(0, 16) : "",
+        endsAt: promoData.endsAt ? promoData.endsAt.slice(0, 16) : "",
+        isActive: promoData.isActive,
+        minSubtotal: promoData.minSubtotal ?? undefined,
+        usageLimit: promoData.usageLimit ?? undefined,
+        usageLimitPerCustomer: promoData.usageLimitPerCustomer ?? undefined,
+        productIds: promoData.promotionProducts?.map((pp) => pp.productId) || [],
+      });
     }
   }, [isEdit, promoData, reset]);
 
   const allProducts = productsData?.data || [];
-  const selectedProducts = allProducts.filter((p) => watchProductIds?.includes(p.id));
+  const promoProducts = (promoProductsResp?.data || []).map((pp) => ({
+    id: pp.product.id,
+    name: pp.product.name,
+    slug: pp.product.slug,
+    basePrice: pp.product.basePrice,
+    sku: pp.product.sku ?? null,
+    isActive: true,
+    isFeatured: false,
+    trackInventory: false,
+    images: pp.product.images || [],
+  }));
 
-  const toggleProduct = (productId: string) => {
-    const current = watchProductIds || [];
-    if (current.includes(productId)) {
-      setValue("productIds", current.filter((id) => id !== productId), { shouldValidate: true });
-    } else {
-      setValue("productIds", [...current, productId], { shouldValidate: true });
-    }
+  const selectedProducts = React.useMemo(() => {
+    const combined = new Map<string, typeof allProducts[number]>();
+    allProducts.forEach((p) => combined.set(p.id, p));
+    promoProducts.forEach((p) => { if (!combined.has(p.id)) combined.set(p.id, p as any); });
+    return (watchProductIds || [])
+      .map((pid) => combined.get(pid))
+      .filter(Boolean) as typeof allProducts;
+  }, [allProducts, promoProducts, watchProductIds]);
+
+  const removeProduct = (productId: string) => {
+    const next = watchProductIds.filter((pid) => pid !== productId);
+    setValue("productIds", next, { shouldValidate: true });
+  };
+
+  const handlePickerConfirm = (ids: string[]) => {
+    setValue("productIds", ids, { shouldValidate: true });
   };
 
   const onSubmit = (data: PromotionFormData) => {
@@ -142,8 +171,17 @@ export default function PromotionEditor() {
     );
   }
 
+  console.log('selectedProducts', selectedProducts)
+
   return (
     <div>
+      <ProductPickerModal
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selectedIds={watchProductIds}
+        onSelect={handlePickerConfirm}
+      />
+
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
@@ -204,7 +242,6 @@ export default function PromotionEditor() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Tipe & Nilai Promosi</CardTitle>
-                <CardDescription>Pilih jenis promosi dan masukkan nilainya</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
@@ -216,7 +253,6 @@ export default function PromotionEditor() {
                       <div className="grid grid-cols-3 gap-3">
                         {typeOptions.map((opt) => {
                           const Icon = opt.icon;
-                          const isSelected = field.value === opt.value;
                           return (
                             <button
                               key={opt.value}
@@ -224,11 +260,11 @@ export default function PromotionEditor() {
                               onClick={() => field.onChange(opt.value)}
                               className={cn(
                                 "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-center",
-                                isSelected ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                                field.value === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
                               )}
                             >
-                              <Icon className={cn("h-6 w-6", isSelected ? "text-primary" : "text-muted-foreground")} />
-                              <span className={cn("text-sm font-medium", isSelected && "text-primary")}>{opt.label}</span>
+                              <Icon className={cn("h-6 w-6", field.value === opt.value ? "text-primary" : "text-muted-foreground")} />
+                              <span className={cn("text-sm font-medium", field.value === opt.value && "text-primary")}>{opt.label}</span>
                               <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
                             </button>
                           );
@@ -245,11 +281,9 @@ export default function PromotionEditor() {
                       {promoType === "PERCENTAGE" ? "Persentase Diskon (%)" : "Nominal Potongan (Rp)"} <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id="value"
-                      type="number"
+                      id="value" type="number"
                       step={promoType === "PERCENTAGE" ? "1" : "1000"}
-                      min="1"
-                      max={promoType === "PERCENTAGE" ? "100" : undefined}
+                      min="1" max={promoType === "PERCENTAGE" ? "100" : undefined}
                       {...register("value", { valueAsNumber: true })}
                       placeholder={promoType === "PERCENTAGE" ? "10" : "50000"}
                       className={errors.value ? "border-destructive" : ""}
@@ -267,59 +301,97 @@ export default function PromotionEditor() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Produk Promosi</CardTitle>
-                <CardDescription>Pilih produk yang termasuk dalam promosi ini</CardDescription>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Daftar Produk Promosi</CardTitle>
+                    <CardDescription>Produk yang termasuk dalam promosi ini</CardDescription>
+                  </div>
+                  <Button type="button" size="sm" onClick={() => setPickerOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Pilih Produk
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {selectedProducts.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedProducts.map((p) => (
-                      <Badge key={p.id} variant="secondary" className="gap-1.5 py-1.5 pl-2 pr-1">
-                        {p.name}
-                        <button type="button" onClick={() => toggleProduct(p.id)} className="ml-1 hover:text-destructive">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                {selectedProducts.length === 0 ? (
+                  <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                    <Package className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground mb-3">Belum ada produk dipilih</p>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Pilih Produk
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[60px]">#</TableHead>
+                          <TableHead>Produk</TableHead>
+                          <TableHead className="text-right">Harga Normal</TableHead>
+                          <TableHead className="text-right">Harga Diskon</TableHead>
+                          <TableHead className="w-[60px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedProducts.map((product, idx) => {
+                          const image = product.images?.[0];
+                          const discounted = calcDiscountedPrice(product.basePrice, promoType, promoValue);
+                          const hasDiscount = promoType !== "FREE_SHIPPING" && discounted < product.basePrice;
+
+                          return (
+                            <TableRow key={product.id}>
+                              <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                    {image?.url ? (
+                                      <img src={image.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                                    ) : (
+                                      <Package className="h-5 w-5 text-muted-foreground/40" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate max-w-[200px]">{product.name}</p>
+                                    <p className="text-xs text-muted-foreground">{product.sku || "—"}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-semibold">
+                                {formatPrice(product.basePrice)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {hasDiscount ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-xs text-muted-foreground line-through">
+                                      {formatPrice(product.basePrice)}
+                                    </span>
+                                    <span className="text-sm font-bold text-green-600">
+                                      {formatPrice(discounted)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">{formatPrice(product.basePrice)}</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button" variant="ghost" size="icon-sm"
+                                  className="text-muted-foreground hover:text-destructive"
+                                  onClick={() => removeProduct(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
-                <div className="border rounded-lg max-h-64 overflow-y-auto">
-                  {allProducts.length === 0 ? (
-                    <p className="text-center py-8 text-muted-foreground text-sm">Tidak ada produk</p>
-                  ) : (
-                    allProducts.map((p) => {
-                      const isSelected = watchProductIds?.includes(p.id);
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => toggleProduct(p.id)}
-                          className={cn(
-                            "flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted/50 transition-colors border-b last:border-b-0",
-                            isSelected && "bg-primary/5"
-                          )}
-                        >
-                          <div className={cn(
-                            "h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                            isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"
-                          )}>
-                            {isSelected && (
-                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{p.name}</p>
-                            <p className="text-xs text-muted-foreground">{formatPrice(p.basePrice)}</p>
-                          </div>
-                          {p.isFeatured && <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-amber-400/20 text-amber-700 border-0">Unggulan</Badge>}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {selectedProducts.length} produk dipilih. Kosongkan jika promosi berlaku untuk semua produk.
                 </p>

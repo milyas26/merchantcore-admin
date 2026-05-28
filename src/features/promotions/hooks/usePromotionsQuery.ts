@@ -20,6 +20,14 @@ export function usePromotionQuery(id: string) {
   });
 }
 
+export function usePromotionProductsQuery(promotionId: string) {
+  return useQuery({
+    queryKey: [KEY, promotionId, "products"],
+    queryFn: () => promotionApi.getPromotionProducts(promotionId),
+    enabled: !!promotionId,
+  });
+}
+
 export function useCreatePromotion() {
   const qc = useQueryClient();
   return useMutation({
