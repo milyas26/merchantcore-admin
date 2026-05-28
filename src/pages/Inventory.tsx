@@ -335,7 +335,7 @@ export default function Inventory() {
                           onClick={() => {
                             if (item.productSlug) {
                               navigate(
-                                `/catalog/${item.productSlug}?id=${item.productId}`
+                                `/catalog/${item.productSlug}`
                               );
                             } else {
                               toast.info("Slug produk tidak tersedia");

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -8,10 +10,29 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Product } from "../api/productApi";
-import { Package, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { productApi } from "../api/productApi";
+import { Package, ChevronLeft, ChevronRight, ArrowUpDown, MoreVertical, Eye, Pencil, Archive, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ProductDataTableProps {
   products: Product[];
@@ -43,9 +64,12 @@ export function ProductDataTable({
   onProductClick,
   onPageChange,
   sortBy = "createdAt",
-  sortOrder = "desc",
   onSort,
 }: ProductDataTableProps) {
+  const navigate = useNavigate();
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const handleSort = (column: string) => {
     onSort?.(column);
   };
@@ -79,210 +103,290 @@ export function ProductDataTable({
     return pages;
   };
 
+  const handleArchive = async (product: Product) => {
+    try {
+      await productApi.updateProductStatus(product.id, !product.isActive);
+      toast.success(product.isActive ? "Produk diarsipkan" : "Produk diaktifkan");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err?.error?.message || "Gagal mengubah status produk");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await productApi.deleteProduct(deleteTarget.id);
+      toast.success("Produk berhasil dihapus");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err?.error?.message || "Gagal menghapus produk");
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
   return (
-    <Card className="px-4">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[60px]">#</TableHead>
-              <TableHead className="min-w-[200px]">
-                <button
-                  type="button"
-                  className="flex items-center hover:text-foreground transition-colors"
-                  onClick={() => handleSort("name")}
-                >
-                  Produk {renderSortIcon("name")}
-                </button>
-              </TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead className="text-right">
-                <button
-                  type="button"
-                  className="flex items-center ml-auto hover:text-foreground transition-colors"
-                  onClick={() => handleSort("price")}
-                >
-                  Harga {renderSortIcon("price")}
-                </button>
-              </TableHead>
-              <TableHead className="text-center">Stok</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((product, idx) => {
-              const variantCount = product.variants?.length ?? 0;
-              const hasVariants = variantCount > 1;
+    <>
+      <Card className="px-4">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[60px]">#</TableHead>
+                <TableHead className="min-w-[200px]">
+                  <button
+                    type="button"
+                    className="flex items-center hover:text-foreground transition-colors"
+                    onClick={() => handleSort("name")}
+                  >
+                    Produk {renderSortIcon("name")}
+                  </button>
+                </TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead className="text-right">
+                  <button
+                    type="button"
+                    className="flex items-center ml-auto hover:text-foreground transition-colors"
+                    onClick={() => handleSort("price")}
+                  >
+                    Harga {renderSortIcon("price")}
+                  </button>
+                </TableHead>
+                <TableHead className="text-center">Stok</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map((product, idx) => {
+                const variantCount = product.variants?.length ?? 0;
+                const hasVariants = variantCount > 1;
 
-              const totalStock = product.trackInventory
-                ? (product.variants ?? []).reduce(
-                    (s, v) => s + (v.inventory?.quantity ?? 0),
-                    0
-                  )
-                : null;
+                const totalStock = product.trackInventory
+                  ? (product.variants ?? []).reduce(
+                      (s, v) => s + (v.inventory?.quantity ?? 0),
+                      0
+                    )
+                  : null;
 
-              const lowStock =
-                totalStock !== null &&
-                totalStock > 0 &&
-                product.variants?.some(
-                  (v) =>
-                    v.inventory &&
-                    v.inventory.lowStockThreshold &&
-                    v.inventory.quantity <= v.inventory.lowStockThreshold
-                );
+                const lowStock =
+                  totalStock !== null &&
+                  totalStock > 0 &&
+                  product.variants?.some(
+                    (v) =>
+                      v.inventory &&
+                      v.inventory.lowStockThreshold &&
+                      v.inventory.quantity <= v.inventory.lowStockThreshold
+                  );
 
-              const outOfStock = totalStock !== null && totalStock <= 0;
+                const outOfStock = totalStock !== null && totalStock <= 0;
 
-              return (
-                <TableRow
-                  key={product.id}
-                  className="cursor-pointer"
-                  onClick={() => onProductClick(product)}
-                >
-                  <TableCell className="text-muted-foreground text-xs">
-                    {(pagination.page - 1) * pagination.limit + idx + 1}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {product.images?.[0]?.url ? (
-                          <img
-                            src={product.images[0].url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        ) : (
-                          <Package className="h-5 w-5 text-muted-foreground/50" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate max-w-[180px]">
-                          {product.name}
-                        </p>
-                        {hasVariants && (
-                          <p className="text-xs text-muted-foreground">
-                            {variantCount} varian
+                return (
+                  <TableRow
+                    key={product.id}
+                    className="cursor-pointer"
+                    onClick={() => onProductClick(product)}
+                  >
+                    <TableCell className="text-muted-foreground text-xs">
+                      {(pagination.page - 1) * pagination.limit + idx + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {product.images?.[0]?.url ? (
+                            <img
+                              src={product.images[0].url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <Package className="h-5 w-5 text-muted-foreground/50" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate max-w-[180px]">
+                            {product.name}
                           </p>
-                        )}
+                          {hasVariants && (
+                            <p className="text-xs text-muted-foreground">
+                              {variantCount} varian
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {product.category?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm font-mono">
-                    {product.sku ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-col items-end">
-                      <span className="font-semibold text-sm">
-                        {formatPrice(product.basePrice)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {totalStock === null ? (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    ) : outOfStock ? (
-                      <Badge
-                        variant="destructive"
-                        className="text-[10px] h-5"
-                      >
-                        Habis
-                      </Badge>
-                    ) : (
-                      <span
-                        className={cn(
-                          "text-sm font-medium",
-                          lowStock
-                            ? "text-amber-600"
-                            : "text-green-600"
-                        )}
-                      >
-                        {totalStock}
-                        {lowStock && (
-                          <span className="text-[10px] block">stok rendah</span>
-                        )}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {product.isActive ? (
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-800 text-[10px] h-5 border-0"
-                      >
-                        Aktif
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-100 text-gray-600 text-[10px] h-5 border-0"
-                      >
-                        Draft
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t">
-          <p className="text-sm text-muted-foreground">
-            {pagination.total} produk
-          </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              disabled={!pagination.hasPrev}
-              onClick={() => onPageChange(pagination.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            {getPageNumbers().map((page, idx) =>
-              page === "..." ? (
-                <span
-                  key={`dots-${idx}`}
-                  className="w-8 text-center text-sm text-muted-foreground"
-                >
-                  ...
-                </span>
-              ) : (
-                <Button
-                  key={page}
-                  variant={pagination.page === page ? "default" : "outline"}
-                  size="icon-sm"
-                  onClick={() => onPageChange(page as number)}
-                  className="text-xs"
-                >
-                  {page}
-                </Button>
-              )
-            )}
-
-            <Button
-              variant="outline"
-              size="icon-sm"
-              disabled={!pagination.hasNext}
-              onClick={() => onPageChange(pagination.page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {product.category?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm font-mono">
+                      {product.sku ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-semibold text-sm">
+                          {formatPrice(product.basePrice)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {totalStock === null ? (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      ) : outOfStock ? (
+                        <Badge
+                          variant="destructive"
+                          className="text-[10px] h-5"
+                        >
+                          Habis
+                        </Badge>
+                      ) : (
+                        <span
+                          className={cn(
+                            "text-sm font-medium",
+                            lowStock
+                              ? "text-amber-600"
+                              : "text-green-600"
+                          )}
+                        >
+                          {totalStock}
+                          {lowStock && (
+                            <span className="text-[10px] block">stok rendah</span>
+                          )}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {product.isActive ? (
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-800 text-[10px] h-5 border-0"
+                        >
+                          Aktif
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="bg-gray-100 text-gray-600 text-[10px] h-5 border-0"
+                        >
+                          Draft
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => navigate(`/catalog/${product.slug}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Lihat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/catalog/edit/${product.slug}`)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleArchive(product)}>
+                            <Archive className="h-4 w-4 mr-2" />
+                            {product.isActive ? "Arsipkan" : "Aktifkan"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDeleteTarget(product)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
-      )}
-    </Card>
+
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <p className="text-sm text-muted-foreground">
+              {pagination.total} produk
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                disabled={!pagination.hasPrev}
+                onClick={() => onPageChange(pagination.page - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              {getPageNumbers().map((page, idx) =>
+                page === "..." ? (
+                  <span
+                    key={`dots-${idx}`}
+                    className="w-8 text-center text-sm text-muted-foreground"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <Button
+                    key={page}
+                    variant={pagination.page === page ? "default" : "outline"}
+                    size="icon-sm"
+                    onClick={() => onPageChange(page as number)}
+                    className="text-xs"
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
+
+              <Button
+                variant="outline"
+                size="icon-sm"
+                disabled={!pagination.hasNext}
+                onClick={() => onPageChange(pagination.page + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus "{deleteTarget?.name}"? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

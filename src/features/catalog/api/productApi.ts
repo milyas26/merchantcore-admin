@@ -151,6 +151,41 @@ export class ProductApi {
       } as ErrorResponse;
     }
   }
+
+  async deleteProduct(id: string): Promise<void> {
+    try {
+      await api.delete(`/products/${id}`);
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while deleting product",
+        },
+      } as ErrorResponse;
+    }
+  }
+
+  async updateProductStatus(id: string, isActive: boolean): Promise<ProductResponse> {
+    try {
+      const response = await api.patch<ProductResponse>(`/products/${id}`, { isActive });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw error.response.data as ErrorResponse;
+      }
+      throw {
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while updating product",
+        },
+      } as ErrorResponse;
+    }
+  }
 }
 
 export const productApi = ProductApi.getInstance();

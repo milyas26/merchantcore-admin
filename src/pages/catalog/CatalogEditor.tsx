@@ -34,6 +34,7 @@ import {
   Globe,
   Weight,
   Barcode,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +137,8 @@ export const CatalogEditor = () => {
     enabled: isEditMode,
   });
 
+  const backUrl = isEditMode ? `/catalog/${slug}` : "/catalog";
+
   const {
     form,
     onSubmit,
@@ -221,22 +224,32 @@ export const CatalogEditor = () => {
     <div>
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {isEditMode ? "Edit Produk" : "Produk Baru"}
-            </h1>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              {isEditMode
-                ? "Perbarui detail dan kelola SKU produk"
-                : "Lengkapi informasi produk dan SKU"}
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => navigate(backUrl)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {isEditMode ? "Edit Produk" : "Produk Baru"}
+              </h1>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                {isEditMode
+                  ? "Perbarui detail dan kelola SKU produk"
+                  : "Lengkapi informasi produk dan SKU"}
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               disabled={isLoading}
-              onClick={() => navigate("/catalog")}
+              onClick={() => navigate(backUrl)}
             >
               Batal
             </Button>
