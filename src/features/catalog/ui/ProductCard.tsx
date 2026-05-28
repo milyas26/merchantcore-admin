@@ -42,12 +42,12 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
   return (
     <Card
       className={cn(
-        "group overflow-hidden border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
+        "group overflow-hidden border transition-all py-0 duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
         !product.isActive && "opacity-75"
       )}
       onClick={() => onClick?.(product)}
     >
-      <div className="aspect-square relative bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
+      <div className="aspect-square relative bg-linear-to-br from-muted/50 to-muted overflow-hidden">
         {mainImage?.url ? (
           <img
             src={mainImage.url}

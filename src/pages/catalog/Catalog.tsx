@@ -66,10 +66,6 @@ export default function Catalog() {
     }
   };
 
-  const statsText = pagination
-    ? `${pagination.total} produk`
-    : "";
-
   const sortOptions = [
     { label: "Terbaru", value: "createdAt", order: "desc" as const },
     { label: "Terlama", value: "createdAt", order: "asc" as const },
