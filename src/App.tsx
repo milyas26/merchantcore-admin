@@ -14,6 +14,8 @@ import Promotions from "./pages/Promotions";
 import PromotionEditor from "./pages/PromotionEditor";
 import Reports from "./pages/Reports";
 import Storefront from "./pages/Storefront";
+import Announcements from "./pages/Announcements";
+import AnnouncementEditor from "./pages/AnnouncementEditor";
 import { useAuth } from "./features/auth/hooks/useAuth";
 import { ProtectedLayout } from "./components/protected-layout";
 import Category from "./pages/Category";
@@ -225,6 +227,53 @@ function App() {
                     <h1 className="text-3xl font-bold">Customers</h1>
                     <p>Customer management page will be implemented here.</p>
                   </div>
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/announcements"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Announcements" },
+                  ]}
+                >
+                  <Announcements />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/announcements/new"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Announcements", href: "/announcements" },
+                    { title: "Tambah Pengumuman" },
+                  ]}
+                >
+                  <AnnouncementEditor />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/announcements/:id"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Announcements", href: "/announcements" },
+                    { title: "Edit Pengumuman" },
+                  ]}
+                >
+                  <AnnouncementEditor />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

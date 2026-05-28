@@ -90,7 +90,7 @@ const data = {
       items: [
         {
           title: "Announcement",
-          url: "/announcement",
+          url: "/announcements",
           icon: Megaphone,
         },
         {

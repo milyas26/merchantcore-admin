@@ -80,7 +80,7 @@ export function ProductDataTable({
   };
 
   return (
-    <Card>
+    <Card className="px-4">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
