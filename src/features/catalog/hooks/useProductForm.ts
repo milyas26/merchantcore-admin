@@ -23,8 +23,9 @@ export const useProductForm = ({
   onError,
 }: UseProductFormProps = {}) => {
   const queryClient = useQueryClient();
+  const isEditMode = !!productId;
 
-  const form = useForm<any>({
+  const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
@@ -38,7 +39,6 @@ export const useProductForm = ({
       isFeatured: false,
       trackInventory: true,
       isVariant: false,
-      barcode: "",
       inventory: {
         quantity: 0,
         reserved: 0,
@@ -52,7 +52,6 @@ export const useProductForm = ({
     },
   });
 
-  // Field arrays for dynamic fields
   const imagesArray = useFieldArray({
     control: form.control,
     name: "images",
@@ -68,31 +67,12 @@ export const useProductForm = ({
     name: "attributes",
   });
 
-  // Mutation for upsert product
   const upsertProductMutation = useMutation({
     mutationFn: productEditorApi.upsertProduct,
-    onSuccess: async (res: any, variables: any) => {
-      try {
-        const sentVariants = Array.isArray(variables?.variants)
-          ? variables.variants
-          : [];
-        const sentDefaultBarcode =
-          sentVariants.length === 1 ? sentVariants[0]?.barcode : undefined;
-
-        if (sentDefaultBarcode) {
-          const fetched = await productApi.getProductBySlug(res?.data?.slug);
-          const persistedBarcode = fetched?.data?.variants?.[0]?.barcode;
-          if (!persistedBarcode || String(persistedBarcode) !== String(sentDefaultBarcode)) {
-            toast.error("Barcode varian default tidak tersimpan. Mohon periksa kembali.");
-          } else {
-            toast.success("Produk berhasil dibuat!");
-          }
-        } else {
-          toast.success("Produk berhasil dibuat!");
-        }
-      } catch {
-        toast.success("Produk berhasil dibuat!");
-      }
+    onSuccess: async () => {
+      toast.success(
+        isEditMode ? "Produk berhasil diperbarui!" : "Produk berhasil dibuat!"
+      );
       queryClient.invalidateQueries({ queryKey: [PRODUCT_QUERY_KEY] });
       form.reset();
       onSuccess?.();
@@ -105,27 +85,35 @@ export const useProductForm = ({
   });
 
   const onSubmit = (data: ProductFormData) => {
+    const seoTitle = data.name || "";
+    const seoDesc = data.description
+      ? data.description.length > 160
+        ? data.description.slice(0, 157) + "..."
+        : data.description
+      : undefined;
+
     const cleanedData: any = {
       ...data,
       description: data.description || undefined,
       sku: data.sku || undefined,
       cost: data.cost || undefined,
       weight: data.weight || undefined,
-      seoTitle: data.seoTitle || undefined,
-      seoDescription: data.seoDescription || undefined,
+      seoTitle,
+      seoDescription: seoDesc,
     };
 
-    const productBarcode = data.barcode?.trim() ? data.barcode.trim() : undefined;
-    const productInventory = data.trackInventory
-      ? {
-          quantity: data.inventory?.quantity ?? 0,
-          reserved: data.inventory?.reserved ?? 0,
-          lowStockThreshold: data.inventory?.lowStockThreshold ?? undefined,
-        }
-      : undefined;
+    const hasVariants =
+      Array.isArray(data.variants) && data.variants.length > 0;
 
-    const hasVariants = Array.isArray(data.variants) && data.variants.length > 0;
     if (!data.isVariant) {
+      const productInventory = data.trackInventory
+        ? {
+            quantity: data.inventory?.quantity ?? 0,
+            reserved: data.inventory?.reserved ?? 0,
+            lowStockThreshold: data.inventory?.lowStockThreshold ?? undefined,
+          }
+        : undefined;
+
       cleanedData.variants = [
         {
           title: "Default",
@@ -133,7 +121,7 @@ export const useProductForm = ({
           price: data.basePrice,
           cost: data.cost ?? undefined,
           weight: data.weight ?? undefined,
-          barcode: productBarcode,
+          barcode: data.barcode || undefined,
           image: undefined,
           position: 0,
           isActive: data.isActive ?? true,
@@ -149,11 +137,15 @@ export const useProductForm = ({
           price: data.basePrice,
           cost: data.cost ?? undefined,
           weight: data.weight ?? undefined,
-          barcode: productBarcode,
+          barcode: undefined,
           image: undefined,
           position: 0,
           isActive: data.isActive ?? true,
-          inventory: productInventory,
+          inventory: {
+            quantity: 0,
+            reserved: 0,
+            lowStockThreshold: undefined,
+          },
           options: [],
         },
       ];
@@ -162,11 +154,10 @@ export const useProductForm = ({
     const payload = {
       id: productId ?? 0,
       ...cleanedData,
-    } as any;
+    };
     upsertProductMutation.mutate(payload);
   };
 
-  // Helper functions
   const addImage = () => {
     imagesArray.append({
       url: "",
@@ -203,7 +194,7 @@ export const useProductForm = ({
   const removeVariant = (index: number) => {
     variantsArray.remove(index);
     const remaining = (form.getValues("variants") || []).length;
-    if (remaining === 0) {
+    if (remaining === 1) {
       form.setValue("isVariant", false);
     }
   };
@@ -245,6 +236,7 @@ export const useProductForm = ({
     form,
     onSubmit,
     isLoading: upsertProductMutation.isPending,
+    isEditMode,
     imagesArray,
     variantsArray,
     attributesArray,
@@ -272,24 +264,31 @@ export function mapProductToFormValue(product: Product): ProductFormData {
     throw new Error("Data produk tidak valid atau kosong");
   }
 
+  const isVariant =
+    (product as any).isVariant ??
+    ((product.variants?.length ?? 0) > 1);
+
+  const primaryVariant = product.variants?.[0];
+
   return {
     name: product.name,
     description: product.description || undefined,
     categoryId: product.categoryId,
     sku: product.sku || undefined,
     basePrice: product.basePrice,
-    cost: product.cost || undefined,
-    weight: product.weight || undefined,
+    cost: product.cost ? Number(product.cost) : undefined,
+    weight: product.weight ? Number(product.weight) : undefined,
     isActive: product.isActive,
     isFeatured: product.isFeatured,
     trackInventory: product.trackInventory,
-    isVariant: (product as any).isVariant ?? false,
-    barcode: (product as any).barcode || undefined,
-    inventory: (product as any).inventory
+    isVariant,
+    barcode: primaryVariant?.barcode || undefined,
+    inventory: primaryVariant?.inventory
       ? {
-          quantity: (product as any).inventory.quantity,
-          reserved: (product as any).inventory.reserved ?? 0,
-          lowStockThreshold: (product as any).inventory.lowStockThreshold || undefined,
+          quantity: primaryVariant.inventory.quantity,
+          reserved: primaryVariant.inventory.reserved ?? 0,
+          lowStockThreshold:
+            primaryVariant.inventory.lowStockThreshold || undefined,
         }
       : undefined,
     seoTitle: product.seoTitle || undefined,
@@ -300,36 +299,38 @@ export function mapProductToFormValue(product: Product): ProductFormData {
         alt: m.alt || undefined,
         position: m.position,
       })) || [],
-    variants:
-      product.variants?.map((v) => ({
-        title: v.title,
-        sku: v.sku,
-        price: v.price,
-        cost: v.cost || undefined,
-        weight: v.weight || undefined,
-        barcode: v.barcode || undefined,
-        image: v.image || undefined,
-        position: v.position,
-        isActive: v.isActive,
-        inventory: v.inventory
-          ? {
-              quantity: v.inventory.quantity,
-              reserved: v.inventory.reserved ?? 0,
-              lowStockThreshold: v.inventory.lowStockThreshold || undefined,
-            }
-          : undefined,
-        options: Array.isArray((v as any).options)
-          ? (
-              (v as any).options as Array<{
-                optionName: string;
-                optionValue: string;
-              }>
-            ).map((o) => ({
-              optionName: o.optionName,
-              optionValue: o.optionValue,
-            }))
-          : [],
-      })) || [],
+    variants: isVariant
+      ? product.variants?.map((v) => ({
+          title: v.title,
+          sku: v.sku,
+          price: v.price,
+          cost: v.cost ? Number(v.cost) : undefined,
+          weight: v.weight ? Number(v.weight) : undefined,
+          barcode: v.barcode || undefined,
+          image: v.image || undefined,
+          position: v.position,
+          isActive: v.isActive,
+          inventory: v.inventory
+            ? {
+                quantity: v.inventory.quantity,
+                reserved: v.inventory.reserved ?? 0,
+                lowStockThreshold:
+                  v.inventory.lowStockThreshold || undefined,
+              }
+            : undefined,
+          options: Array.isArray((v as any).options)
+            ? (
+                (v as any).options as Array<{
+                  optionName: string;
+                  optionValue: string;
+                }>
+              ).map((o) => ({
+                optionName: o.optionName,
+                optionValue: o.optionValue,
+              }))
+            : [],
+        })) || []
+      : [],
     attributes:
       (product as any).attributes?.map((a: any) => ({
         name: a.name,

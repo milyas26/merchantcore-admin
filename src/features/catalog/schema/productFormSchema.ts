@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Product form schemas
 export const productImageFormSchema = z.object({
   url: z.string().url("URL gambar tidak valid"),
   alt: z.string().optional(),
@@ -8,8 +7,14 @@ export const productImageFormSchema = z.object({
 });
 
 export const variantOptionFormSchema = z.object({
-  optionName: z.string().min(1, "Nama opsi wajib diisi").max(50, "Nama opsi maksimal 50 karakter"),
-  optionValue: z.string().min(1, "Nilai opsi wajib diisi").max(100, "Nilai opsi maksimal 100 karakter"),
+  optionName: z
+    .string()
+    .min(1, "Nama opsi wajib diisi")
+    .max(50, "Nama opsi maksimal 50 karakter"),
+  optionValue: z
+    .string()
+    .min(1, "Nilai opsi wajib diisi")
+    .max(100, "Nilai opsi maksimal 100 karakter"),
 });
 
 export const productVariantFormSchema = z
@@ -20,9 +25,9 @@ export const productVariantFormSchema = z
       .max(255, "Judul varian maksimal 255 karakter"),
     sku: z
       .string()
-      .min(1, "SKU wajib diisi")
+      .min(1, "SKU varian wajib diisi")
       .max(100, "SKU maksimal 100 karakter"),
-    price: z.number().positive("Harga jual harus positif"),
+    price: z.number({ required_error: "Harga jual varian wajib diisi" }).positive("Harga jual harus positif"),
     cost: z.number().positive("HPP harus positif").optional(),
     weight: z.number().positive("Berat harus positif").optional(),
     barcode: z.string().max(100, "Barcode maksimal 100 karakter").optional(),
@@ -71,20 +76,22 @@ export const productFormSchema = z
       .min(1, "Nama produk wajib diisi")
       .max(255, "Nama produk maksimal 255 karakter"),
     description: z.string().optional(),
-    categoryId: z.string("Kategori harus dipilih"),
+    categoryId: z.string().min(1, "Kategori wajib dipilih"),
     sku: z
       .string()
-      .min(1, "SKU wajib diisi")
       .max(100, "SKU maksimal 100 karakter")
-      .optional(),
-    basePrice: z.number().positive("Harga jual harus positif"),
+      .optional()
+      .or(z.literal("")),
+    basePrice: z
+      .number({ required_error: "Harga jual wajib diisi" })
+      .positive("Harga jual harus positif"),
     cost: z.number().positive("HPP harus positif").optional(),
     weight: z.number().positive("Berat harus positif").optional(),
     isActive: z.boolean().optional().default(true),
     isFeatured: z.boolean().optional().default(false),
     trackInventory: z.boolean().optional().default(true),
     isVariant: z.boolean().optional().default(false),
-    barcode: z.string().optional(),
+    barcode: z.string().max(100, "Barcode maksimal 100 karakter").optional().or(z.literal("")),
     inventory: z
       .object({
         quantity: z.number().int().nonnegative("Quantity harus positif"),

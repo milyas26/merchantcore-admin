@@ -11,6 +11,7 @@ import Catalog from "./pages/catalog/Catalog";
 import { CatalogEditor } from "./pages/catalog/CatalogEditor";
 import Inventory from "./pages/Inventory";
 import Promotions from "./pages/Promotions";
+import PromotionEditor from "./pages/PromotionEditor";
 import Reports from "./pages/Reports";
 import Storefront from "./pages/Storefront";
 import { useAuth } from "./features/auth/hooks/useAuth";
@@ -159,6 +160,22 @@ function App() {
                   ]}
                 >
                   <Promotions />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/promotions/:id"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Promotions", href: "/promotions" },
+                    { title: "Editor" },
+                  ]}
+                >
+                  <PromotionEditor />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

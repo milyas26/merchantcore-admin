@@ -17,14 +17,113 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Controller, useWatch } from "react-hook-form";
-import { Plus, Trash2, Image as ImageIcon, Package, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CategorySelector from "@/components/category-selector";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Controller, useWatch } from "react-hook-form";
+import {
+  Plus,
+  Trash2,
+  Image as ImageIcon,
+  Tag,
+  Package,
+  DollarSign,
+  Layers,
+  Globe,
+  Weight,
+  Barcode,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const FieldError = ({ message }: { message?: string }) => {
+  if (!message) return null;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
+};
+
+const FieldGroup = ({
+  label,
+  htmlFor,
+  required,
+  error,
+  children,
+  className,
+}: {
+  label: string;
+  htmlFor?: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div className={cn("space-y-1.5", className)}>
+    <Label htmlFor={htmlFor}>
+      {label}
+      {required && <span className="text-destructive ml-0.5">*</span>}
+    </Label>
+    {children}
+    <FieldError message={error} />
+  </div>
+);
+
+const SectionCard = ({
+  icon: Icon,
+  title,
+  description,
+  action,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <Card>
+    <CardHeader className="pb-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            {description && (
+              <CardDescription className="text-xs">
+                {description}
+              </CardDescription>
+            )}
+          </div>
+        </div>
+        {action}
+      </div>
+    </CardHeader>
+    <CardContent>{children}</CardContent>
+  </Card>
+);
+
+const StockBadge = ({
+  quantity,
+  threshold,
+}: {
+  quantity: number;
+  threshold?: number | null;
+}) => {
+  if (quantity <= 0)
+    return <Badge variant="destructive">Habis</Badge>;
+  if (threshold && quantity <= threshold)
+    return (
+      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+        Rendah
+      </Badge>
+    );
+  return (
+    <Badge variant="secondary" className="bg-green-100 text-green-800">
+      Tersedia
+    </Badge>
+  );
+};
 
 export const CatalogEditor = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -69,81 +168,67 @@ export const CatalogEditor = () => {
   } = form;
 
   const isVariant = useWatch({ control: form.control, name: "isVariant" });
-
-  const variantCount =
-    isEditMode && productQuery.data
-      ? productQuery.data.variants?.length ?? 0
-      : 0;
-  const firstVariant =
-    isEditMode && productQuery.data
-      ? productQuery.data.variants?.[0]
-      : undefined;
-  const isDefaultVariantOnly = !!(
-    isEditMode &&
-    variantCount === 1 &&
-    ((firstVariant?.sku && String(firstVariant.sku).endsWith("-DEFAULT")) ||
-      firstVariant?.title === "Default")
-  );
+  const trackInventory = useWatch({
+    control: form.control,
+    name: "trackInventory",
+  });
+  const productName = useWatch({ control: form.control, name: "name" });
+  const productDesc = useWatch({
+    control: form.control,
+    name: "description",
+  });
 
   useEffect(() => {
     if (isEditMode && productQuery.data) {
       try {
         const values = mapProductToFormValue(productQuery.data);
         reset(values);
-        const v = productQuery.data.variants?.[0];
-        if (isDefaultVariantOnly && v) {
-          if (typeof v.barcode !== "undefined") {
-            setValue("barcode", v.barcode || "");
-          }
-          if (productQuery.data.trackInventory) {
-            if (v.inventory) {
-              setValue("inventory.quantity", v.inventory.quantity ?? 0);
-              setValue("inventory.reserved", v.inventory.reserved ?? 0);
-              if (typeof v.inventory.lowStockThreshold !== "undefined") {
-                setValue(
-                  "inventory.lowStockThreshold",
-                  v.inventory.lowStockThreshold ?? undefined
-                );
-              }
-            }
-          }
-        }
       } catch (e) {
         console.error(e);
       }
     }
-  }, [isEditMode, productQuery.data, reset, isDefaultVariantOnly, setValue]);
+  }, [isEditMode, productQuery.data, reset]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     form.handleSubmit(onSubmit)();
   };
 
+  if (isEditMode && productQuery.isPending) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-[600px] w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (isEditMode && productQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          {(productQuery.error as Error)?.message ||
+            "Gagal memuat data produk"}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const getVariantErrors = (index: number) =>
+    (errors as any)?.variants?.[index];
+
   return (
     <div>
-      {isEditMode && productQuery.isPending && (
-        <div className="space-y-2 mb-4">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-      )}
-      {isEditMode && productQuery.isError && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>
-            {(productQuery.error as Error)?.message ||
-              "Gagal memuat data produk"}
-          </AlertDescription>
-        </Alert>
-      )}
       <form onSubmit={handleSubmit}>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold">
-              {isEditMode ? "Edit Produk" : "Tambah Produk Baru"}
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isEditMode ? "Edit Produk" : "Produk Baru"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm mt-0.5">
               {isEditMode
-                ? "Edit produk yang sudah ada"
-                : "Buat produk baru untuk katalog Anda"}
+                ? "Perbarui detail dan kelola SKU produk"
+                : "Lengkapi informasi produk dan SKU"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -156,582 +241,712 @@ export const CatalogEditor = () => {
               Batal
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading
-                ? "Menyimpan..."
-                : isEditMode
-                ? "Update Produk"
-                : "Simpan Produk"}
+              {isLoading ? "Menyimpan..." : isEditMode ? "Simpan Perubahan" : "Simpan Produk"}
             </Button>
           </div>
         </div>
 
         {Object.keys(errors).length > 0 && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="mb-6">
             <AlertDescription>
-              Ada kesalahan dalam form. Silakan periksa kembali data yang Anda
-              masukkan.
+              Terdapat kesalahan pada form. Periksa kembali data yang diinput.
             </AlertDescription>
           </Alert>
         )}
 
-        <Tabs defaultValue="basic" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="basic">Informasi Dasar</TabsTrigger>
-            {isVariant && <TabsTrigger value="variants">Varian</TabsTrigger>}
-            <TabsTrigger value="images">Gambar</TabsTrigger>
-            <TabsTrigger value="attributes">Atribut</TabsTrigger>
-            <TabsTrigger value="seo">SEO</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="basic" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informasi Dasar</CardTitle>
-                <CardDescription>Informasi utama produk Anda</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nama Produk *</Label>
+        <div className="space-y-6">
+          {/* Basic Info */}
+          <SectionCard
+            icon={Package}
+            title="Informasi Dasar"
+            description="Nama, deskripsi, dan kategori produk"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <div className="space-y-4 md:col-span-1">
+                <FieldGroup
+                  label="Nama Produk"
+                  htmlFor="name"
+                  required
+                  error={errors.name?.message}
+                >
                   <Input
                     id="name"
                     {...register("name")}
                     placeholder="Masukkan nama produk"
-                    className={errors.name ? "border-red-500" : ""}
+                    className={errors.name ? "border-destructive" : ""}
                   />
-                  {errors.name && (
-                    <p className="text-sm text-red-500">
-                      {String(errors.name?.message || "")}
-                    </p>
-                  )}
-                </div>
+                </FieldGroup>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Deskripsi</Label>
+                <FieldGroup label="Deskripsi" htmlFor="description">
                   <Textarea
                     id="description"
                     {...register("description")}
-                    placeholder="Deskripsi produk"
+                    placeholder="Deskripsi lengkap produk"
                     rows={4}
                   />
-                  {errors.description && (
-                    <p className="text-sm text-red-500">
-                      {String(errors.description?.message || "")}
-                    </p>
-                  )}
-                </div>
+                </FieldGroup>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="categoryId">Kategori *</Label>
-                    <CategorySelector
-                      onSaveSelect={(id: string) => {
-                        setValue("categoryId", id);
-                      }}
-                      defaultValue={productQuery.data?.categoryId || ""}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="sku">SKU</Label>
-                    <Input
-                      id="sku"
-                      {...register("sku")}
-                      placeholder="Masukkan SKU"
-                    />
-                    {errors.sku && (
-                      <p className="text-sm text-red-500">
-                        {String(errors.sku?.message || "")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="basePrice">Harga Jual *</Label>
-                    <Input
-                      id="basePrice"
-                      type="number"
-                      step="0.01"
-                      {...register("basePrice", { valueAsNumber: true })}
-                      placeholder="0.00"
-                      className={errors.basePrice ? "border-red-500" : ""}
-                    />
-                    {errors.basePrice && (
-                      <p className="text-sm text-red-500">
-                        {String(errors.basePrice?.message || "")}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cost">HPP</Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      step="0.01"
-                      {...register("cost", { valueAsNumber: true })}
-                      placeholder="0.00"
-                    />
-                    {errors.cost && (
-                      <p className="text-sm text-red-500">
-                        {String(errors.cost?.message || "")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Berat (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.01"
-                    {...register("weight", { valueAsNumber: true })}
-                    placeholder="0.00"
+                <FieldGroup
+                  label="Kategori"
+                  required
+                  error={errors.categoryId?.message}
+                >
+                  <CategorySelector
+                    onSaveSelect={(id: string) => {
+                      setValue("categoryId", id, { shouldValidate: true });
+                    }}
+                    defaultValue={productQuery.data?.categoryId || ""}
                   />
-                  {errors.weight && (
-                    <p className="text-sm text-red-500">
-                      {String(errors.weight?.message || "")}
-                    </p>
-                  )}
-                </div>
-                {!isVariant && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="barcode">Barcode</Label>
-                      <Input
-                        id="barcode"
-                        {...register("barcode")}
-                        placeholder="Masukkan barcode produk"
-                      />
-                      {errors.barcode && (
-                        <p className="text-sm text-red-500">
-                          {String(errors.barcode?.message || "")}
-                        </p>
-                      )}
-                      {(() => {
-                        const v = watch("variants") || [];
-                        const b = watch("barcode");
-                        const dup = b && v.some((x: any) => x?.barcode === b);
-                        return dup && !isDefaultVariantOnly ? (
-                          <p className="text-sm text-red-500">
-                            Barcode produk tidak boleh sama dengan barcode
-                            varian
-                          </p>
-                        ) : null;
-                      })()}
-                    </div>
+                </FieldGroup>
 
-                    {watch("trackInventory") && (
-                      <div className="space-y-2">
-                        <Label htmlFor="inventory.quantity">Quantity</Label>
-                        <Input
-                          id="inventory.quantity"
-                          type="number"
-                          {...register("inventory.quantity", {
-                            valueAsNumber: true,
-                          })}
-                          placeholder="0"
+                <FieldGroup label="SKU Induk" htmlFor="sku">
+                  <Input
+                    id="sku"
+                    {...register("sku")}
+                    placeholder="SKU-001"
+                  />
+                  <FieldError message={errors.sku?.message} />
+                </FieldGroup>
+              </div>
+
+              <div className="space-y-4 md:col-span-1">
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="isActive"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Switch
+                          id="isActive"
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
                         />
-                        {(errors as any)?.inventory?.quantity && (
-                          <p className="text-sm text-red-500">
-                            {String(
-                              (errors as any)?.inventory?.quantity?.message ||
-                                ""
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    />
+                    <Label htmlFor="isActive" className="cursor-pointer">
+                      Aktif
+                    </Label>
                   </div>
-                )}
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="isFeatured"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Switch
+                          id="isFeatured"
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="isFeatured" className="cursor-pointer">
+                      Unggulan
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="trackInventory"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Switch
+                          id="trackInventory"
+                          checked={!!field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label
+                      htmlFor="trackInventory"
+                      className="cursor-pointer"
+                    >
+                      Lacak Inventori
+                    </Label>
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-2 space-y-4">
+                  <FieldGroup
+                    label="Harga Jual"
+                    htmlFor="basePrice"
+                    required
+                    error={errors.basePrice?.message}
+                  >
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="basePrice"
+                        type="number"
+                        step="100"
+                        min="0"
+                        {...register("basePrice", { valueAsNumber: true })}
+                        placeholder="0"
+                        className={cn(
+                          "pl-9",
+                          errors.basePrice && "border-destructive"
+                        )}
+                      />
+                    </div>
+                  </FieldGroup>
 
-                <div className="flex gap-4">
+                  <FieldGroup label="HPP (Harga Pokok)" htmlFor="cost">
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="cost"
+                        type="number"
+                        step="100"
+                        min="0"
+                        {...register("cost", { valueAsNumber: true })}
+                        placeholder="0"
+                        className={cn(
+                          errors.cost && "border-destructive",
+                          "pl-9"
+                        )}
+                      />
+                    </div>
+                    <FieldError message={errors.cost?.message} />
+                  </FieldGroup>
+
+                  <FieldGroup label="Berat (kg)" htmlFor="weight">
+                    <div className="relative">
+                      <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="weight"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...register("weight", { valueAsNumber: true })}
+                        placeholder="0.00"
+                        className={cn(
+                          errors.weight && "border-destructive",
+                          "pl-9"
+                        )}
+                      />
+                    </div>
+                    <FieldError message={errors.weight?.message} />
+                  </FieldGroup>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* SKU / Variant Section */}
+          <SectionCard
+            icon={Layers}
+            title="SKU & Harga Varian"
+            description={
+              isVariant
+                ? "Setiap varian memiliki harga, stok, dan barcode tersendiri"
+                : "Produk tanpa varian — satu SKU dengan harga dan stok"
+            }
+            action={
+              !isVariant ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addVariant}
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Tambah Varian
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3">
                   <div className="flex items-center space-x-2">
                     <Controller
                       name="isVariant"
                       control={form.control}
                       render={({ field }) => (
                         <Switch
-                          id="isVariant"
+                          id="isVariantTop"
                           checked={!!field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            if (!checked) {
+                              const vars = form.getValues("variants") || [];
+                              if (vars.length === 1) {
+                                form.setValue("variants", []);
+                              }
+                            }
+                          }}
                         />
                       )}
                     />
-                    <Label htmlFor="isVariant">Produk Varian</Label>
+                    <Label
+                      htmlFor="isVariantTop"
+                      className="text-xs cursor-pointer"
+                    >
+                      Multi Varian
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch id="isActive" {...register("isActive")} />
-                    <Label htmlFor="isActive">Aktif</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch id="isFeatured" {...register("isFeatured")} />
-                    <Label htmlFor="isFeatured">Unggulan</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="trackInventory"
-                      {...register("trackInventory")}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addVariant}
+                    className="h-8"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Tambah
+                  </Button>
+                </div>
+              )
+            }
+          >
+            {!isVariant ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FieldGroup label="Barcode" htmlFor="barcode">
+                  <Input
+                    id="barcode"
+                    {...register("barcode")}
+                    placeholder="Kode barcode"
+                  />
+                  <FieldError message={errors.barcode?.message} />
+                </FieldGroup>
+                {trackInventory && (
+                  <FieldGroup
+                    label="Stok Tersedia"
+                    htmlFor="inventory.quantity"
+                  >
+                    <Input
+                      id="inventory.quantity"
+                      type="number"
+                      min="0"
+                      {...register("inventory.quantity", {
+                        valueAsNumber: true,
+                      })}
+                      placeholder="0"
                     />
-                    <Label htmlFor="trackInventory">Lacak Inventori</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <FieldError
+                      message={
+                        (errors as any)?.inventory?.quantity?.message
+                      }
+                    />
+                  </FieldGroup>
+                )}
+              </div>
+            ) : variantsArray.fields.length === 0 ? (
+              <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                <Layers className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-muted-foreground mb-3">
+                  Belum ada varian
+                </p>
+                <Button type="button" onClick={addVariant} size="sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Tambah Varian
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {variantsArray.fields.map((variant, index) => {
+                  const vErr = getVariantErrors(index);
+                  const variantData = watch(`variants.${index}`);
+                  const isExpanded = variantsArray.fields.length === 1;
 
-          <TabsContent value="variants" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Varian Produk</CardTitle>
-                    <CardDescription>
-                      Kelola varian produk seperti ukuran dan warna
-                    </CardDescription>
-                  </div>
-                  <Button type="button" onClick={addVariant} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Varian
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {variantsArray.fields.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-4" />
-                    <p>Belum ada varian ditambahkan</p>
-                    <Button
-                      type="button"
-                      onClick={addVariant}
-                      className="mt-4"
-                      size="sm"
+                  return (
+                    <div
+                      key={variant.id}
+                      className="border rounded-lg overflow-hidden"
                     >
-                      Tambah Varian Pertama
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {variantsArray.fields.map((variant, variantIndex) => (
-                      <Card key={variant.id} className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <h4 className="font-semibold">
-                            Varian {variantIndex + 1}
-                          </h4>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeVariant(variantIndex)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="space-y-2">
-                            <Label>Judul Varian *</Label>
-                            <Input
-                              {...register(`variants.${variantIndex}.title`)}
-                              placeholder="Contoh: Merah M, Biru L"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>SKU Varian</Label>
-                            <Input
-                              {...register(`variants.${variantIndex}.sku`)}
-                              placeholder="SKU varian"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="space-y-2">
-                            <Label>Harga Jual Varian *</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...register(`variants.${variantIndex}.price`, {
-                                valueAsNumber: true,
-                              })}
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>HPP</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...register(`variants.${variantIndex}.cost`, {
-                                valueAsNumber: true,
-                              })}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="space-y-2">
-                            <Label>Berat (kg)</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...register(`variants.${variantIndex}.weight`, {
-                                valueAsNumber: true,
-                              })}
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Barcode</Label>
-                            <Input
-                              {...register(`variants.${variantIndex}.barcode`)}
-                              placeholder="Barcode"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Stok (Quantity)</Label>
-                            <Input
-                              type="number"
-                              {...register(
-                                `variants.${variantIndex}.inventory.quantity`,
-                                { valueAsNumber: true }
-                              )}
-                              placeholder="0"
-                            />
-                            {(errors as any)?.variants?.[variantIndex]
-                              ?.inventory?.quantity && (
-                              <p className="text-sm text-red-500">
-                                {String(
-                                  (errors as any)?.variants?.[variantIndex]
-                                    ?.inventory?.quantity?.message || ""
-                                )}
-                              </p>
+                      <div className="flex items-center justify-between px-4 py-3 bg-muted/40">
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-sm">
+                            {variantData?.title || `Varian ${index + 1}`}
+                          </span>
+                          {variantData?.sku && (
+                            <Badge variant="outline" className="text-xs">
+                              {variantData.sku}
+                            </Badge>
+                          )}
+                          {variantData?.barcode && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Barcode className="h-3 w-3" />
+                              {variantData.barcode}
+                            </span>
+                          )}
+                          {(!variantData?.isActive) && (
+                            <Badge variant="secondary" className="text-xs">
+                              Nonaktif
+                            </Badge>
+                          )}
+                          {trackInventory &&
+                            variantData?.inventory?.quantity !== undefined && (
+                              <StockBadge
+                                quantity={variantData.inventory.quantity}
+                                threshold={
+                                  variantData.inventory.lowStockThreshold
+                                }
+                              />
                             )}
-                          </div>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="images" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Gambar Produk</CardTitle>
-                    <CardDescription>
-                      Unggah dan kelola gambar produk
-                    </CardDescription>
-                  </div>
-                  <Button type="button" onClick={addImage} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Gambar
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {imagesArray.fields.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ImageIcon className="h-12 w-12 mx-auto mb-4" />
-                    <p>Belum ada gambar ditambahkan</p>
-                    <Button
-                      type="button"
-                      onClick={addImage}
-                      className="mt-4"
-                      size="sm"
-                    >
-                      Tambah Gambar Pertama
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {imagesArray.fields.map((image, index) => (
-                      <Card key={image.id} className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <Badge variant="secondary">Gambar {index + 1}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Controller
+                            name={`variants.${index}.isActive`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <Switch
+                                checked={!!field.value}
+                                onCheckedChange={field.onChange}
+                                className="scale-90"
+                              />
+                            )}
+                          />
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeImage(index)}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeVariant(index)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>URL Gambar *</Label>
+                      </div>
+
+                      <div className="p-4 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <FieldGroup
+                            label="Judul Varian"
+                            required
+                            error={vErr?.title?.message}
+                          >
                             <Input
-                              {...register(`images.${index}.url`)}
-                              placeholder="https://example.com/image.jpg"
+                              {...register(`variants.${index}.title`)}
+                              placeholder="Merah M, Biru L"
                             />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Alt Text</Label>
+                          </FieldGroup>
+                          <FieldGroup
+                            label="SKU"
+                            required
+                            error={vErr?.sku?.message}
+                          >
                             <Input
-                              {...register(`images.${index}.alt`)}
-                              placeholder="Deskripsi gambar untuk SEO"
+                              {...register(`variants.${index}.sku`)}
+                              placeholder="SKU-VAR-001"
                             />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Posisi</Label>
+                          </FieldGroup>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <FieldGroup
+                            label="Harga Jual"
+                            required
+                            error={vErr?.price?.message}
+                          >
                             <Input
                               type="number"
-                              {...register(`images.${index}.position`, {
+                              step="100"
+                              min="0"
+                              {...register(`variants.${index}.price`, {
                                 valueAsNumber: true,
                               })}
                               placeholder="0"
                             />
-                          </div>
+                          </FieldGroup>
+                          <FieldGroup label="HPP">
+                            <Input
+                              type="number"
+                              step="100"
+                              min="0"
+                              {...register(`variants.${index}.cost`, {
+                                valueAsNumber: true,
+                              })}
+                              placeholder="0"
+                            />
+                          </FieldGroup>
+                          <FieldGroup label="Berat (kg)">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              {...register(`variants.${index}.weight`, {
+                                valueAsNumber: true,
+                              })}
+                              placeholder="0.00"
+                            />
+                          </FieldGroup>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="attributes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Atribut Produk</CardTitle>
-                    <CardDescription>
-                      Tambahkan atribut tambahan seperti material, ukuran, dll
-                    </CardDescription>
-                  </div>
-                  <Button type="button" onClick={addAttribute} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Atribut
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {attributesArray.fields.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Tag className="h-12 w-12 mx-auto mb-4" />
-                    <p>Belum ada atribut ditambahkan</p>
-                    <Button
-                      type="button"
-                      onClick={addAttribute}
-                      className="mt-4"
-                      size="sm"
-                    >
-                      Tambah Atribut Pertama
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {attributesArray.fields.map((attribute, index) => (
-                      <Card key={attribute.id} className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <Badge variant="secondary">Atribut {index + 1}</Badge>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeAttribute(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Nama Atribut *</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <FieldGroup label="Barcode">
                             <Input
-                              {...register(`attributes.${index}.name`)}
-                              placeholder="Contoh: Material"
+                              {...register(`variants.${index}.barcode`)}
+                              placeholder="Kode barcode"
                             />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Nilai Atribut *</Label>
+                          </FieldGroup>
+                          <FieldGroup label="URL Gambar Varian">
                             <Input
-                              {...register(`attributes.${index}.value`)}
-                              placeholder="Contoh: Katun"
+                              {...register(`variants.${index}.image`)}
+                              placeholder="https://..."
                             />
-                          </div>
+                          </FieldGroup>
                         </div>
-                        <div className="space-y-2 mt-4">
-                          <Label>Posisi</Label>
+
+                        {trackInventory && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t pt-3">
+                            <FieldGroup
+                              label="Stok"
+                              error={
+                                vErr?.inventory?.quantity?.message
+                              }
+                            >
+                              <Input
+                                type="number"
+                                min="0"
+                                {...register(
+                                  `variants.${index}.inventory.quantity`,
+                                  { valueAsNumber: true }
+                                )}
+                                placeholder="0"
+                              />
+                            </FieldGroup>
+                            <FieldGroup label="Dipesan">
+                              <Input
+                                type="number"
+                                min="0"
+                                {...register(
+                                  `variants.${index}.inventory.reserved`,
+                                  { valueAsNumber: true }
+                                )}
+                                placeholder="0"
+                              />
+                            </FieldGroup>
+                            <FieldGroup label="Ambang Stok Rendah">
+                              <Input
+                                type="number"
+                                min="1"
+                                {...register(
+                                  `variants.${index}.inventory.lowStockThreshold`,
+                                  { valueAsNumber: true }
+                                )}
+                                placeholder="10"
+                              />
+                            </FieldGroup>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Images */}
+          <SectionCard
+            icon={ImageIcon}
+            title="Gambar Produk"
+            description="Unggah dan kelola gambar produk"
+            action={
+              <Button type="button" size="sm" onClick={addImage}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Tambah Gambar
+              </Button>
+            }
+          >
+            {imagesArray.fields.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                <ImageIcon className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-muted-foreground mb-3">
+                  Belum ada gambar
+                </p>
+                <Button type="button" onClick={addImage} size="sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Tambah Gambar
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {imagesArray.fields.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className="border rounded-lg p-3 flex gap-3"
+                  >
+                    <div className="h-20 w-20 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                      {watch(`images.${index}.url`) ? (
+                        <img
+                          src={watch(`images.${index}.url`)}
+                          alt=""
+                          className="h-full w-full object-cover rounded-md"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display =
+                              "none";
+                          }}
+                        />
+                      ) : (
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <FieldGroup label="URL Gambar" required>
+                        <Input
+                          {...register(`images.${index}.url`)}
+                          placeholder="https://..."
+                          className="text-xs h-8"
+                        />
+                      </FieldGroup>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FieldGroup label="Alt Text">
+                          <Input
+                            {...register(`images.${index}.alt`)}
+                            placeholder="Deskripsi"
+                            className="text-xs h-8"
+                          />
+                        </FieldGroup>
+                        <FieldGroup label="Posisi">
                           <Input
                             type="number"
-                            {...register(`attributes.${index}.position`, {
+                            {...register(`images.${index}.position`, {
                               valueAsNumber: true,
                             })}
                             placeholder="0"
+                            className="text-xs h-8"
                           />
-                        </div>
-                      </Card>
-                    ))}
+                        </FieldGroup>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeImage(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            )}
+          </SectionCard>
 
-          <TabsContent value="seo" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>SEO</CardTitle>
-                <CardDescription>
-                  Pengaturan SEO untuk mesin pencari
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="seoTitle">Judul SEO</Label>
-                  <Input
-                    id="seoTitle"
-                    {...register("seoTitle")}
-                    placeholder="Judul untuk hasil pencarian"
-                    maxLength={255}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {watch("seoTitle")?.length || 0}/255 karakter
-                  </p>
-                  {errors.seoTitle && (
-                    <p className="text-sm text-red-500">
-                      {String(errors.seoTitle?.message || "")}
-                    </p>
+          {/* Attributes */}
+          <SectionCard
+            icon={Tag}
+            title="Atribut Produk"
+            description="Spesifikasi tambahan seperti material, ukuran"
+            action={
+              <Button type="button" size="sm" onClick={addAttribute}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Tambah
+              </Button>
+            }
+          >
+            {attributesArray.fields.length === 0 ? (
+              <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                <Tag className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Belum ada atribut
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addAttribute}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Tambah Atribut
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {attributesArray.fields.map((attribute, index) => (
+                  <div
+                    key={attribute.id}
+                    className="flex items-center gap-3 p-2 border rounded-lg"
+                  >
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <Input
+                        {...register(`attributes.${index}.name`)}
+                        placeholder="Nama (contoh: Material)"
+                        className="h-8 text-xs"
+                      />
+                      <Input
+                        {...register(`attributes.${index}.value`)}
+                        placeholder="Nilai (contoh: Katun)"
+                        className="h-8 text-xs"
+                      />
+                      <Input
+                        type="number"
+                        {...register(`attributes.${index}.position`, {
+                          valueAsNumber: true,
+                        })}
+                        placeholder="Posisi"
+                        className="h-8 text-xs w-20"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
+                      onClick={() => removeAttribute(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* SEO Preview */}
+          <SectionCard
+            icon={Globe}
+            title="Pratinjau SEO"
+            description="Pratinjau tampilan produk di hasil pencarian Google"
+          >
+            <div className="max-w-[600px]">
+              <div className="text-sm leading-tight">
+                <div className="flex items-center gap-1.5 text-xs text-[#202124]">
+                  <span className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground flex-shrink-0">
+                    S
+                  </span>
+                  <span className="font-medium">Toko Anda</span>
+                  <span className="text-muted-foreground">&rsaquo;</span>
+                  <span className="text-muted-foreground">Produk</span>
+                  {productName && (
+                    <>
+                      <span className="text-muted-foreground">&rsaquo;</span>
+                      <span className="truncate">{productName}</span>
+                    </>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="seoDescription">Deskripsi SEO</Label>
-                  <Textarea
-                    id="seoDescription"
-                    {...register("seoDescription")}
-                    placeholder="Deskripsi untuk hasil pencarian"
-                    rows={3}
-                    maxLength={500}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {watch("seoDescription")?.length || 0}/500 karakter
-                  </p>
-                  {errors.seoDescription && (
-                    <p className="text-sm text-red-500">
-                      {String(errors.seoDescription?.message || "")}
-                    </p>
+                <div
+                  className={cn(
+                    "text-xl text-[#1a0dab] leading-tight mt-1",
+                    !productName && "italic"
                   )}
+                >
+                  {productName
+                    ? productName.length > 60
+                      ? productName.slice(0, 60) + "..."
+                      : productName
+                    : "Nama Produk"}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+
+                <div className="text-sm text-[#006621] leading-tight mt-0.5">
+                  tokoanda.com / produk /
+                  {productName
+                    ? productName.toLowerCase().replace(/\s+/g, "-").slice(0, 50)
+                    : "nama-produk"}
+                </div>
+
+                <div className="text-sm text-[#4d5156] leading-relaxed mt-0.5">
+                  {productDesc
+                    ? productDesc.length > 160
+                      ? productDesc.slice(0, 157) + "..."
+                      : productDesc
+                    : "Deskripsi produk akan muncul di sini. Tulis deskripsi yang menarik dan informatif untuk meningkatkan klik."}
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-3 border-t pt-3">
+                Judul dan deskripsi SEO akan diambil otomatis dari Nama Produk dan
+                Deskripsi yang kamu isi di form.
+              </p>
+            </div>
+          </SectionCard>
+        </div>
       </form>
     </div>
   );
