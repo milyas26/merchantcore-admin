@@ -7,6 +7,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Products from "./pages/products/Products";
 import Orders from "./pages/orders/Orders";
+import OrderDetail from "./pages/orders/OrderDetail";
 import Catalog from "./pages/catalog/Catalog";
 import CatalogDetail from "./pages/catalog/CatalogDetail";
 import { CatalogEditor } from "./pages/catalog/CatalogEditor";
@@ -71,6 +72,22 @@ function App() {
                   ]}
                 >
                   <Orders />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout
+                  breadcrumbs={[
+                    { title: "Dashboard", href: "/" },
+                    { title: "Orders", href: "/orders" },
+                    { title: "Order Detail" },
+                  ]}
+                >
+                  <OrderDetail />
                 </ProtectedLayout>
               </ProtectedRoute>
             }
